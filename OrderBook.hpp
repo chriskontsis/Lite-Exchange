@@ -6,6 +6,13 @@
 #include <vector>
 #include <unordered_map>
 
+struct SellComparator;
+struct BuyComparator;
+
+using sellBook = std::priority_queue<Order, std::vector<Order>, SellComparator>;
+using buyBook = std::priority_queue<Order, std::vector<Order>, BuyComparator>;
+using sellBooks = std::unordered_map<std::string, sellBook>;
+using buyBooks = std::unordered_map<std::string, buyBook>;
 
 class OrderBook {
     public:
@@ -24,18 +31,15 @@ struct SellComparator {
         if(left.price == right.price && left.timeStamp < right.timeStamp) return true;
         return false;
     }
-}
+};
 struct BuyComparator {
     bool operator()(const Order& left, const Order& right) {
         if(left.price > right.price) return true;
         if(left.price == right.price && left.timeStamp < right.timeStamp) return true;
         return false;
     }
-}
+};
 
-using sellBook = std::priority_queue<Order, std::vector<Order>, SellComparator> 
-using buyBook = std::priority_queue<Order, std::vector<Order>, BuyComparator>
-using sellBooks = std::unordered_map<std::string, sellBook>
-using buyBooks = std::unordered_map<std::string, buyBook>
+
 
 #endif
