@@ -6,6 +6,7 @@
 #include <string> 
 #include <fstream>
 #include <iostream>
+#include <boost/asio.hpp>
 
 class MatchingEngine {
     public:
@@ -14,7 +15,7 @@ class MatchingEngine {
 
     private:
         void orderMatch(Order& order);
-        void parseOrders(std::string orderInfo, const std::string& delimeter, Order& order);
+        void parseOrders(std::string& orderInfo, const std::string& delimeter, Order& order, boost::asio::ip::tcp::socket& socket);
         OrderBook orderBook;
 
         std::string filename;

@@ -17,7 +17,6 @@ using buyBooks = std::unordered_map<std::string, buyBook>;
 class OrderBook {
     public:
         OrderBook() {}
-    private:
         sellBooks sellBooks;
         buyBooks buyBooks;
         std::unordered_map<int, Order> orderHistory;
