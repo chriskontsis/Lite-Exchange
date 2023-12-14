@@ -3,7 +3,7 @@
 
 
 MatchingEngine::MatchingEngine(int argc, char** argv) : filename("test_data.txt"), delimeter(" ") {
-
+    currentStamp = 0;
 }
 
 void MatchingEngine::start() {
@@ -52,6 +52,52 @@ void MatchingEngine::parseOrders(std::string& orderInfo, const std::string& deli
 }
 
 void MatchingEngine::orderMatch(Order& order) {
+    const auto ticker = order.tickerSymbol;
+    const auto expiration = order.expiration;
+    
+
+    if(order.action == OrderAction::BUY) {
+        auto& tickerSellBook = orderBook.sellBooks[ticker];
+        while(!tickerSellBook.empty()) {
+            auto bestSell = tickerSellBook.top();
+            if(bestSell.expiration == -1 && !(currentStamp - bestSell.timeStamp < bestSell.expiration)) {
+                tickerSellBook.pop(); break;
+            }
+
+            else if(order.price > bestSell.price || order.price == bestSell.price) {
+                if(order.quantity < bestSell.quantity) {
+                    auto nextOrder = tickerSellBook.top();
+                    nextOrder.quantity = bestSell.quantity - order.quantity;
+                    tickerSellBook.pop();
+                    tickerSellBook.push(nextOrder);
+                    std::cout << order.clientName << " purchased " << order.quantity <<  " share of " << ticker << " from " << bestSell.clientName << " for $ " << bestSell.price << "/share" << std::endl;
+                    return;
+                }
+                else if(order.quantity == bestSell.quantity) {
+                    tickerSellBook.pop();
+                    std::cout << order.clientName << " purchased " << order.quantity <<  " share of " << ticker << " from " << bestSell.clientName << " for $ " << bestSell.price << "/share" << std::endl;
+                    return;
+                }
+                else {
+                    order.quantity -= bestSell.quantity;
+                    tickerSellBook.pop();
+                    std::cout << order.clientName << " purchased " << order.quantity <<  " share of " << ticker << " from " << bestSell.clientName << " for $ " << bestSell.price << "/share" << std::endl;
+                }
+            }
+
+            else {
+                //no match at current buy price
+                if(expiration != 0) orderBook.buyBooks[ticker].push(order); return;
+            }
+        }
+        //empty book case
+        if(expiration != 0) orderBook.buyBooks[ticker].push(order);
+    }
+
+
+    else {
+
+    }
 
 }
 

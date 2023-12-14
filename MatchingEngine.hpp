@@ -22,6 +22,7 @@ class MatchingEngine {
 
         std::string filename;
         std::string delimeter;
+        int currentStamp;
         
 };
 
