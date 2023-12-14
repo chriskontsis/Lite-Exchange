@@ -4,8 +4,11 @@
 #include "Order.hpp"
 #include "OrderBook.hpp"
 #include <string> 
+#include <unordered_map>
+#include <map>
 #include <fstream>
 #include <iostream>
+#include <cstdint>
 #include <boost/asio.hpp>
 
 class MatchingEngine {
@@ -14,16 +17,19 @@ class MatchingEngine {
         void start();
 
     private:
-        void orderMatch(Order& order);
+        void orderMatch(Order& order, boost::asio::ip::tcp::socket& socket);
         void orderDelete(int orderId);
         void orderUpdate(int orderId);
-        void parseOrders(std::string& orderInfo, const std::string& delimeter, Order& order, boost::asio::ip::tcp::socket& socket);
+        void parseOrders(std::string& orderInfo, const std::string& delimeter, Order& order);
         OrderBook orderBook;
+
+
 
         std::string filename;
         std::string delimeter;
         int currentStamp;
-        
+        std::unordered_map<std::string, std::map<double, u_int64_t, std::greater<>>> buyPrices;
+        std::unordered_map<std::string, std::map<double, u_int64_t>> sellPrices;
 };
 
 
