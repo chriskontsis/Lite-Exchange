@@ -18,10 +18,10 @@ class Order {
         u_int64_t timeStamp;
         std::string clientName;
         std::string tickerSymbol;
-        u_int64_t price;
+        double price;
         u_int64_t quantity;
-        u_int64_t expiration;
-        static u_int64_t ID;
+        int expiration;
+        u_int64_t ID;
         OrderAction action;
 
 };

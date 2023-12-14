@@ -19,7 +19,9 @@ class OrderBook {
         OrderBook() {}
         sellBooks sellBooks;
         buyBooks buyBooks;
-        std::unordered_map<int, Order> orderHistory;
+        std::unordered_map<u_int64_t, Order> orderHistory;
+
+        OrderAction getOrderType(const std::string& order);
 };
 
 

@@ -15,6 +15,8 @@ class MatchingEngine {
 
     private:
         void orderMatch(Order& order);
+        void orderDelete(int orderId);
+        void orderUpdate(int orderId);
         void parseOrders(std::string& orderInfo, const std::string& delimeter, Order& order, boost::asio::ip::tcp::socket& socket);
         OrderBook orderBook;
 
