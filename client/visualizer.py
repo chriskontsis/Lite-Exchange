@@ -1,20 +1,23 @@
 import socket
-
+def process_updates(data):
+    updates = data.split("#")
+    for update in updates:
+        print(update)
+        
 def receive_updated_price_levels(s):
     while True:
         try:
-            data = s.recv(1024).decode()  # Adjust buffer size as needed
+            data = s.recv(1024).decode()  
             if not data:
                 break
-            # Process received data and update GUI
-            print("Received updated price levels:", data)  # Replace with your GUI update logic
+            process_updates(data)  
         except ConnectionError as e:
             print("Connection closed:", e)
             break
 
 def main():
-    host = '127.0.0.1'  # Replace with your server's IP address
-    port = 8080  # Same port used in the C++ server
+    host = '127.0.0.1'
+    port = 8080  
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
