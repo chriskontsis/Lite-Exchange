@@ -18,7 +18,7 @@ void MatchingEngine::start() {
         while(getline(myFile, orderInfo)) {
             Order order;
             parseOrders(orderInfo, delimeter, order, socket);
-            // orderMatch(order);
+            if(order.action == OrderAction::BUY || order.action == OrderAction::SELL) orderMatch(order);
         }
         myFile.close();
     }
@@ -44,7 +44,6 @@ void MatchingEngine::parseOrders(std::string& orderInfo, const std::string& deli
         order.price = stod(tokens[5]);
         order.quantity = stoi(tokens[6]);
         order.expiration = stoi(tokens[7]);
-
         orderBook.orderHistory[orderId] = order;
     }
     
@@ -96,9 +95,39 @@ void MatchingEngine::orderMatch(Order& order) {
 
 
     else {
+        auto& tickerBuyBook = orderBook.buyBooks[ticker];
+        while(!tickerBuyBook.empty()) {
+            auto bestBuy = tickerBuyBook.top();
+            if(bestBuy.expiration == -1 && (currentStamp - bestBuy.timeStamp < bestBuy.expiration)) {
+                tickerBuyBook.pop(); break;
+            }
 
+            else if(order.price < bestBuy.price || order.price == bestBuy.price) {
+                if(order.quantity < bestBuy.quantity) {
+                    auto nextOrder = tickerBuyBook.top();
+                    tickerBuyBook.pop();
+                    nextOrder.quantity = bestBuy.quantity - order.quantity;
+                    tickerBuyBook.push(nextOrder);
+                    std::cout << bestBuy.clientName << " purchased " << order.quantity <<  " share of " << ticker << " from " << order.clientName << " for $ " << bestBuy.price << "/share" << std::endl;
+                    return;
+                }
+                else if(order.quantity == bestBuy.quantity) {
+                    tickerBuyBook.pop();
+                    std::cout << bestBuy.clientName << " purchased " << order.quantity <<  " share of " << ticker << " from " << order.clientName << " for $ " << bestBuy.price << "/share" << std::endl;
+                    return;
+                }
+                else {
+                    order.quantity -= bestBuy.quantity;
+                    tickerBuyBook.pop();
+                    std::cout << bestBuy.clientName << " purchased " << order.quantity <<  " share of " << ticker << " from " << order.clientName << " for $ " << bestBuy.price << "/share" << std::endl;
+                }
+            }
+            else {
+                if(expiration != 0) orderBook.sellBooks[ticker].push(order); return;
+            }
+        }
+        if(expiration != 0) orderBook.sellBooks[ticker].push(order); return;
     }
-
 }
 
 void MatchingEngine::orderDelete(int orderId) {
