@@ -1,19 +1,10 @@
-
-# import sys
-# from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QListWidget, QListWidgetItem, QHBoxLayout, QLabel
-# import socket
-
-
-
-import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QTableWidget, QTableWidgetItem, QVBoxLayout, QHBoxLayout, QListWidget, QListWidgetItem
-import socket
-import threading
+from PyQt5.QtWidgets import QWidget, QHBoxLayout, QListWidget, QListWidgetItem
+from collections import OrderedDict
 
 class OrderBookVisualizer(QWidget):
     def __init__(self):
         super().__init__()
-        self.order_book_data = {}  # Initialize order book data
+        self.order_book_data = {} 
         self.initUI()
 
     def initUI(self):
@@ -45,7 +36,8 @@ class OrderBookVisualizer(QWidget):
         self.sell_list.clear()
 
         # Populate buy list
-        for price, quantity in buy_data.items():
+        sorted_buy_data = OrderedDict(sorted(buy_data.items(), key=lambda x: x[0], reverse=True))
+        for price, quantity in sorted_buy_data.items():
             self.buy_list.addItem(f"Buy - Price: {price}, Quantity: {quantity}")
 
         # Populate sell list
@@ -72,42 +64,3 @@ class OrderBookVisualizer(QWidget):
                         item = self.equity_list.item(index)
                         if item.text() == ticker:
                             item.setText(ticker)
-
-
-
-
-def process_updates(data):
-    updates = data.split("#")
-    for update in updates:
-        print(update)
-
-def receive_updated_price_levels(s,window):
-    while True:
-        try:
-            data = s.recv(1024).decode()  
-            if not data:
-                break
-            window.update_order_book(data)
-        except ConnectionError as e:
-            print("Connection closed:", e)
-            break
-
-def main():
-    app = QApplication(sys.argv)
-    window = OrderBookVisualizer()
-    window.show()
-    
-    host = '127.0.0.1'
-    port = 8080  
-
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    try:
-        s.connect((host, port))
-        receive_updated_price_levels(s, window)
-    except ConnectionRefusedError as e:
-        print("Connection failed:", e)
-
-    sys.exit(app.exec_())
-
-if __name__ == "__main__":
-    main()
