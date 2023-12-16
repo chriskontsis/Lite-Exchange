@@ -94,7 +94,7 @@ void MatchingEngine::orderMatch(Order& order, boost::asio::ip::tcp::socket& sock
             orderBook.buyBooks[ticker].push(order);
             buyPrices[ticker][order.price] += order.quantity;
             try {
-                boost::asio::write(socket, boost::asio::buffer(ticker + " " + std::to_string(order.price) + " " + std::to_string(buyPrices[ticker][order.price]) + "# "));
+                boost::asio::write(socket, boost::asio::buffer("BUY," + ticker + "," + std::to_string(order.price) + "," + std::to_string(buyPrices[ticker][order.price]) + "# "));
             } catch (const boost::system::system_error& e) {
                 std::cerr << "Error occurred while writing to socket: " << e.what() << std::endl;
             }
