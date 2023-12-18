@@ -3,6 +3,7 @@
 
 #include "Order.hpp"
 #include "OrderBook.hpp"
+#include "SocketWrapper.hpp"
 #include <string> 
 #include <unordered_map>
 #include <map>
@@ -17,7 +18,7 @@ class MatchingEngine {
         void start();
 
     private:
-        void orderMatch(Order& order, boost::asio::ip::tcp::socket& socket);
+        void orderMatch(Order& order, SocketWrapper& socketWrapper);
         void orderDelete(int orderId);
         void orderUpdate(int orderId);
         void parseOrders(std::string& orderInfo, const std::string& delimeter, Order& order);

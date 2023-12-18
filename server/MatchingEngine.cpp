@@ -8,17 +8,18 @@ MatchingEngine::MatchingEngine(int argc, char** argv) : filename("test_data.txt"
 
 void MatchingEngine::start() {
     std::string orderInfo;
-    boost::asio::io_context io_context;
-    boost::asio::ip::tcp::acceptor acceptor(io_context, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), 8080));
-    boost::asio::ip::tcp::socket socket(io_context);
-    acceptor.accept(socket);
 
+    boost::asio::io_context io_context;
+    SocketWrapper socketWrapper(io_context, 8080);
+    // boost::asio::ip::tcp::acceptor acceptor(io_context, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), 8080));
+    // boost::asio::ip::tcp::socket socket(io_context);
+    // acceptor.accept(socket);
     std::ifstream myFile(filename);
     if(myFile.is_open()) {
         while(getline(myFile, orderInfo)) {
             Order order;
             parseOrders(orderInfo, delimeter, order);
-            if(order.action == OrderAction::BUY || order.action == OrderAction::SELL) orderMatch(order, socket);
+            if(order.action == OrderAction::BUY || order.action == OrderAction::SELL) orderMatch(order, socketWrapper);
         }
         myFile.close();
     }
@@ -46,11 +47,9 @@ void MatchingEngine::parseOrders(std::string& orderInfo, const std::string& deli
         order.expiration = stoi(tokens[7]);
         orderBook.orderHistory[orderId] = order;
     }
-    
-    // boost::asio::write(socket, boost::asio::buffer(orderInfo));
 }
 
-void MatchingEngine::orderMatch(Order& order, boost::asio::ip::tcp::socket& socket) {
+void MatchingEngine::orderMatch(Order& order, SocketWrapper& socketWrapper) {
     const auto ticker = order.tickerSymbol;
     const auto expiration = order.expiration;
     
@@ -93,11 +92,8 @@ void MatchingEngine::orderMatch(Order& order, boost::asio::ip::tcp::socket& sock
         if(expiration != 0) {
             orderBook.buyBooks[ticker].push(order);
             buyPrices[ticker][order.price] += order.quantity;
-            try {
-                boost::asio::write(socket, boost::asio::buffer("BUY," + ticker + "," + std::to_string(order.price) + "," + std::to_string(buyPrices[ticker][order.price]) + "# "));
-            } catch (const boost::system::system_error& e) {
-                std::cerr << "Error occurred while writing to socket: " << e.what() << std::endl;
-            }
+            std::string data = "BUY," + ticker + "," + std::to_string(order.price) + "," + std::to_string(buyPrices[ticker][order.price]) + "# ";
+            socketWrapper.writeToSocket(data);
         }
     }
 
