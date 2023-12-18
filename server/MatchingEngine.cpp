@@ -8,12 +8,8 @@ MatchingEngine::MatchingEngine(int argc, char** argv) : filename("test_data.txt"
 
 void MatchingEngine::start() {
     std::string orderInfo;
-
     boost::asio::io_context io_context;
     SocketWrapper socketWrapper(io_context, 8080);
-    // boost::asio::ip::tcp::acceptor acceptor(io_context, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), 8080));
-    // boost::asio::ip::tcp::socket socket(io_context);
-    // acceptor.accept(socket);
     std::ifstream myFile(filename);
     if(myFile.is_open()) {
         while(getline(myFile, orderInfo)) {
@@ -85,7 +81,13 @@ void MatchingEngine::orderMatch(Order& order, SocketWrapper& socketWrapper) {
 
             else {
                 //no match at current buy price
-                if(expiration != 0) orderBook.buyBooks[ticker].push(order); return;
+                if(expiration != 0) {
+                    orderBook.buyBooks[ticker].push(order); 
+                    buyPrices[ticker][order.price] += order.quantity;
+                    std::string data = "BUY," + ticker + "," + std::to_string(order.price) + "," + std::to_string(buyPrices[ticker][order.price]) + "# ";
+                    socketWrapper.writeToSocket(data);
+                    return;
+                }
             }
         }
         //empty book case

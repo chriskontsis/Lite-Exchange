@@ -25,7 +25,6 @@ class MatchingEngine {
         OrderBook orderBook;
 
 
-
         std::string filename;
         std::string delimeter;
         int currentStamp;
