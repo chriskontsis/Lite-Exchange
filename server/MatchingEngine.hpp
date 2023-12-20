@@ -22,9 +22,9 @@ class MatchingEngine {
         void orderDelete(int orderId);
         void orderUpdate(int orderId);
         void parseOrders(std::string& orderInfo, const std::string& delimeter, Order& order);
+        
+
         OrderBook orderBook;
-
-
         std::string filename;
         std::string delimeter;
         int currentStamp;
