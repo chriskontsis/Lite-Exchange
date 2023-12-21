@@ -71,8 +71,9 @@ class OrderBookVisualizer(QWidget):
 
     def start_socket_thread(self):
         self.socket_thread = SocketThread('127.0.0.1', 8080)
+        #update order book is binded to the data recieved singal, everytime data comes in func
         self.socket_thread.data_received.connect(self.update_order_book)
-        self.socket_thread_thread = QThread()
-        self.socket_thread.moveToThread(self.socket_thread_thread)
-        self.socket_thread_thread.started.connect(self.socket_thread.run)
-        self.socket_thread_thread.start()
+        self.socket_qthread = QThread()
+        self.socket_thread.moveToThread(self.socket_qthread)
+        self.socket_qthread.started.connect(self.socket_thread.run)
+        self.socket_qthread.start()

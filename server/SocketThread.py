@@ -3,6 +3,7 @@ from PyQt5.QtCore import pyqtSignal, QObject
 
 
 class SocketThread(QObject):
+    #this is a pyqt signal which emits a string type when data is recieved
     data_received = pyqtSignal(str)
 
     def __init__(self, host, port):
