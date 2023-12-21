@@ -15,15 +15,13 @@ class Order {
         u_int64_t quantity_, u_int64_t expiration_);
 
         u_int64_t id;
+        OrderAction action;
         u_int64_t timeStamp;
         std::string clientName;
         std::string tickerSymbol;
         double price;
         u_int64_t quantity;
         int expiration;
-        u_int64_t ID;
-        OrderAction action;
-
 };
 
 

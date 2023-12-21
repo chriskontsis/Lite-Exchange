@@ -39,7 +39,7 @@ void MatchingEngine::parseOrders(std::string &orderInfo, const std::string &deli
         orderUpdate(orderId);
     else
     {
-        order.ID = orderId;
+        order.id = orderId;
         order.action = action;
         order.timeStamp = stoull(tokens[2]);
         order.clientName = tokens[3];
