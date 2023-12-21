@@ -10,7 +10,7 @@ void MatchingEngine::start()
 {
     std::string orderInfo;
     boost::asio::io_context io_context;
-    SocketWrapper socketWrapper(io_context, 8080);
+    SocketWrapper socketWrapper(io_context, "127.0.0.1", 8080);
     std::ifstream myFile(filename);
     if (myFile.is_open())
     {

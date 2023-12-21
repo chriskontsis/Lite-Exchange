@@ -7,12 +7,9 @@ boost::asio::ip::tcp::socket &SocketWrapper::getSocket()
 
 void SocketWrapper::writeToSocket(const std::string_view &data)
 {
-    try
-    {
-        boost::asio::write(socket_, boost::asio::buffer(data));
-    }
-    catch (const boost::system::system_error &e)
-    {
-        std::cerr << "Error occurred while writing to socket: " << e.what() << std::endl;
-    }
+        boost::system::error_code error;
+        boost::asio::write(socket_, boost::asio::buffer(data), error);
+        if (error) {
+            std::cerr << "Error writing to socket: " << error.message() << std::endl;
+        }
 }
