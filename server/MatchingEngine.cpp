@@ -1,7 +1,7 @@
 #include "MatchingEngine.hpp"
 #include <boost/algorithm/string.hpp>
 
-MatchingEngine::MatchingEngine(int argc, char **argv) : filename("test_data.txt"), delimeter(" ")
+MatchingEngine::MatchingEngine() : filename("test_data.txt"), delimeter(" ")
 {
     currentStamp = 0;
 }
@@ -74,6 +74,9 @@ void MatchingEngine::orderMatch(Order &order, SocketWrapper &socketWrapper)
                 {
                     auto nextOrder = tickerSellBook.top();
                     nextOrder.quantity = bestSell.quantity - order.quantity;
+                    buyPrices[ticker][order.price] -= order.quantity;
+                    buyPrices[ticker][order.price] += bestSell.quantity;
+                    socketWrapper.writeToSocket("BUY," + ticker + "," + std::to_string(order.price) + "," + std::to_string(buyPrices[ticker][order.price]) + "# ");
                     tickerSellBook.pop();
                     tickerSellBook.push(nextOrder);
                     std::cout << order.clientName << " purchased " << order.quantity << " share of " << ticker << " from " << bestSell.clientName << " for $ " << bestSell.price << "/share" << std::endl;
@@ -82,6 +85,8 @@ void MatchingEngine::orderMatch(Order &order, SocketWrapper &socketWrapper)
                 else if (order.quantity == bestSell.quantity)
                 {
                     tickerSellBook.pop();
+                    buyPrices[ticker][order.price] -= order.quantity;
+                    socketWrapper.writeToSocket("BUY," + ticker + "," + std::to_string(order.price) + "," + std::to_string(buyPrices[ticker][order.price]) + "# ");
                     std::cout << order.clientName << " purchased " << order.quantity << " share of " << ticker << " from " << bestSell.clientName << " for $ " << bestSell.price << "/share" << std::endl;
                     return;
                 }

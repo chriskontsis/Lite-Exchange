@@ -14,33 +14,38 @@ using buyBook = std::priority_queue<Order, std::vector<Order>, BuyComparator>;
 using sellBooks = std::unordered_map<std::string, sellBook>;
 using buyBooks = std::unordered_map<std::string, buyBook>;
 
-class OrderBook {
-    public:
-        OrderBook() {}
-        sellBooks sellBooks;
-        buyBooks buyBooks;
-        std::unordered_map<u_int64_t, Order> orderHistory;
+class OrderBook
+{
+public:
+    OrderBook() {}
+    sellBooks sellBooks;
+    buyBooks buyBooks;
+    std::unordered_map<u_int64_t, Order> orderHistory;
 
-        OrderAction getOrderType(const std::string& order);
+    OrderAction getOrderType(const std::string &order);
 };
 
-
-
-struct SellComparator {
-    bool operator()(const Order& left, const Order& right) {
-        if(left.price < right.price) return true;
-        if(left.price == right.price && left.timeStamp < right.timeStamp) return true;
+struct SellComparator
+{
+    bool operator()(const Order &left, const Order &right)
+    {
+        if (left.price < right.price)
+            return true;
+        if (left.price == right.price && left.timeStamp < right.timeStamp)
+            return true;
         return false;
     }
 };
-struct BuyComparator {
-    bool operator()(const Order& left, const Order& right) {
-        if(left.price > right.price) return true;
-        if(left.price == right.price && left.timeStamp < right.timeStamp) return true;
+struct BuyComparator
+{
+    bool operator()(const Order &left, const Order &right)
+    {
+        if (left.price > right.price)
+            return true;
+        if (left.price == right.price && left.timeStamp < right.timeStamp)
+            return true;
         return false;
     }
 };
-
-
 
 #endif
