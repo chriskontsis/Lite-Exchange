@@ -1,11 +1,15 @@
-from PyQt5.QtWidgets import QWidget, QHBoxLayout, QListWidget, QListWidgetItem
+from PyQt5.QtWidgets import  QWidget, QHBoxLayout, QListWidget, QListWidgetItem
+from PyQt5.QtCore import  QThread
 from collections import OrderedDict
+from SocketThread import SocketThread
+
 
 class OrderBookVisualizer(QWidget):
     def __init__(self):
         super().__init__()
-        self.order_book_data = {} 
+        self.order_book_data = {}
         self.initUI()
+        self.start_socket_thread()
 
     def initUI(self):
         layout = QHBoxLayout()
@@ -25,7 +29,7 @@ class OrderBookVisualizer(QWidget):
 
         self.setLayout(layout)
         self.setWindowTitle('Order Book')
-    
+
     def on_equity_clicked(self, item):
         ticker = item.text()
         buy_data = self.order_book_data[ticker]['buy']
@@ -64,3 +68,11 @@ class OrderBookVisualizer(QWidget):
                         item = self.equity_list.item(index)
                         if item.text() == ticker:
                             item.setText(ticker)
+
+    def start_socket_thread(self):
+        self.socket_thread = SocketThread('127.0.0.1', 8080)
+        self.socket_thread.data_received.connect(self.update_order_book)
+        self.socket_thread_thread = QThread()
+        self.socket_thread.moveToThread(self.socket_thread_thread)
+        self.socket_thread_thread.started.connect(self.socket_thread.run)
+        self.socket_thread_thread.start()
