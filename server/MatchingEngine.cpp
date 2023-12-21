@@ -100,8 +100,7 @@ void MatchingEngine::orderMatch(Order &order, SocketWrapper &socketWrapper)
                 {
                     orderBook.buyBooks[ticker].push(order);
                     buyPrices[ticker][order.price] += order.quantity;
-                    std::string data = "BUY," + ticker + "," + std::to_string(order.price) + "," + std::to_string(buyPrices[ticker][order.price]) + "# ";
-                    socketWrapper.writeToSocket(data);
+                    socketWrapper.writeToSocket("BUY," + ticker + "," + std::to_string(order.price) + "," + std::to_string(buyPrices[ticker][order.price]) + "# ");
                     return;
                 }
             }
@@ -111,8 +110,7 @@ void MatchingEngine::orderMatch(Order &order, SocketWrapper &socketWrapper)
         {
             orderBook.buyBooks[ticker].push(order);
             buyPrices[ticker][order.price] += order.quantity;
-            std::string data = "BUY," + ticker + "," + std::to_string(order.price) + "," + std::to_string(buyPrices[ticker][order.price]) + "# ";
-            socketWrapper.writeToSocket(data);
+            socketWrapper.writeToSocket("BUY," + ticker + "," + std::to_string(order.price) + "," + std::to_string(buyPrices[ticker][order.price]) + "# ");
         }
     }
 
@@ -138,8 +136,7 @@ void MatchingEngine::orderMatch(Order &order, SocketWrapper &socketWrapper)
                     tickerBuyBook.push(nextOrder);
                     sellPrices[ticker][bestBuy.price] -= order.quantity;
                     sellPrices[ticker][bestBuy.price] += bestBuy.quantity;
-                    std::string data = "SELL," + ticker + "," + std::to_string(order.price) + "," + std::to_string(sellPrices[ticker][order.price]) + "# ";
-                    socketWrapper.writeToSocket(data);
+                    socketWrapper.writeToSocket("SELL," + ticker + "," + std::to_string(order.price) + "," + std::to_string(sellPrices[ticker][order.price]) + "# ");
                     std::cout << bestBuy.clientName << " purchased " << order.quantity << " share of " << ticker << " from " << order.clientName << " for $ " << bestBuy.price << "/share" << std::endl;
                     return;
                 }
@@ -147,8 +144,7 @@ void MatchingEngine::orderMatch(Order &order, SocketWrapper &socketWrapper)
                 {
                     tickerBuyBook.pop();
                     sellPrices[ticker][bestBuy.price] -= bestBuy.quantity;
-                    std::string data = "SELL," + ticker + "," + std::to_string(order.price) + "," + std::to_string(sellPrices[ticker][order.price]) + "# ";
-                    socketWrapper.writeToSocket(data);
+                    socketWrapper.writeToSocket("SELL," + ticker + "," + std::to_string(order.price) + "," + std::to_string(sellPrices[ticker][order.price]) + "# ");
                     std::cout << bestBuy.clientName << " purchased " << order.quantity << " share of " << ticker << " from " << order.clientName << " for $ " << bestBuy.price << "/share" << std::endl;
                     return;
                 }
@@ -164,8 +160,7 @@ void MatchingEngine::orderMatch(Order &order, SocketWrapper &socketWrapper)
                 if (expiration != 0)
                 {
                     orderBook.sellBooks[ticker].push(order);
-                    std::string data = "SELL," + ticker + "," + std::to_string(order.price) + "," + std::to_string(sellPrices[ticker][order.price]) + "# ";
-                    socketWrapper.writeToSocket(data);
+                    socketWrapper.writeToSocket("SELL," + ticker + "," + std::to_string(order.price) + "," + std::to_string(sellPrices[ticker][order.price]) + "# ");
                     return;
                 }
             }
@@ -174,8 +169,7 @@ void MatchingEngine::orderMatch(Order &order, SocketWrapper &socketWrapper)
         {
             orderBook.sellBooks[ticker].push(order);
             sellPrices[ticker][order.price] += order.quantity;
-            std::string data = "SELL," + ticker + "," + std::to_string(order.price) + "," + std::to_string(sellPrices[ticker][order.price]) + "# ";
-            socketWrapper.writeToSocket(data);
+            socketWrapper.writeToSocket("SELL," + ticker + "," + std::to_string(order.price) + "," + std::to_string(sellPrices[ticker][order.price]) + "# ");
             return;
         }
     }

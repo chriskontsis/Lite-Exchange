@@ -5,7 +5,7 @@ boost::asio::ip::tcp::socket &SocketWrapper::getSocket()
     return socket_;
 }
 
-void SocketWrapper::writeToSocket(const std::string &data)
+void SocketWrapper::writeToSocket(const std::string_view &data)
 {
     try
     {

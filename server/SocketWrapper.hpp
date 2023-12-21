@@ -5,6 +5,7 @@
 #include <boost/asio.hpp>
 #include <string>
 #include <iostream>
+#include <string_view>
 
 class SocketWrapper {
 public:
@@ -15,7 +16,7 @@ public:
     }
 
     boost::asio::ip::tcp::socket& getSocket();
-    void writeToSocket(const std::string& data);
+    void writeToSocket(const std::string_view& data);
 
 
 private:
