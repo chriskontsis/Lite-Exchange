@@ -1,5 +1,5 @@
 #include "MatchingEngine.hpp"
-#include <boost/algorithm/string.hpp>
+
 
 MatchingEngine::MatchingEngine() : filename("test_data.txt"), delimeter(" ")
 {
@@ -12,6 +12,8 @@ void MatchingEngine::start()
     boost::asio::io_context io_context;
     SocketWrapper socketWrapper(io_context, "127.0.0.1", 8080);
     std::ifstream myFile(filename);
+    auto startTime = std::chrono::high_resolution_clock::now();
+    
     if (myFile.is_open())
     {
         while (getline(myFile, orderInfo))
@@ -23,6 +25,9 @@ void MatchingEngine::start()
         }
         myFile.close();
     }
+
+    auto endTime = std::chrono::high_resolution_clock::now();
+    std::cout << std::chrono::duration_cast<std::chrono::microseconds>(endTime-startTime).count();
 }
 
 void MatchingEngine::parseOrders(std::string &orderInfo, const std::string &delimeter, Order &order)
