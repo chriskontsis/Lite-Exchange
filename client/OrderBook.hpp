@@ -29,7 +29,7 @@ struct SellComparator
 {
     bool operator()(const Order &left, const Order &right)
     {
-        if (left.price < right.price)
+        if (left.price > right.price)
             return true;
         if (left.price == right.price && left.timeStamp < right.timeStamp)
             return true;
@@ -40,7 +40,7 @@ struct BuyComparator
 {
     bool operator()(const Order &left, const Order &right)
     {
-        if (left.price > right.price)
+        if (left.price < right.price)
             return true;
         if (left.price == right.price && left.timeStamp < right.timeStamp)
             return true;

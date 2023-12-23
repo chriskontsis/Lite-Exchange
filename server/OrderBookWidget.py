@@ -136,6 +136,7 @@ class OrderBookVisualizer(QWidget):
                 self.order_table.setItem(row, 2, QTableWidgetItem(str(sell_data.get(price, ''))))
                 row+=1
 
+
     def update_equity_list(self):
         self.equity_list.clear()
         for ticker in self.order_book_data.keys():

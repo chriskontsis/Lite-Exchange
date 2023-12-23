@@ -1,0 +1,5 @@
+7 SELL 3 BluthCorp AMZN 50 22 -1
+9 SELL 4 BadWolfCorp AMZN 100 30 10
+10 BUY 4 KrustyKrab AMZN 130 12 0
+11 BUY 4 BadWolfCorp AMZN 50 30 5
+12 SELL 5 BadWolfCorp AMZN 50 5 0

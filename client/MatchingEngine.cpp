@@ -1,7 +1,7 @@
 #include "MatchingEngine.hpp"
 
 
-MatchingEngine::MatchingEngine() : filename("test_data.txt"), delimeter(" ")
+MatchingEngine::MatchingEngine() : filename("data.txt"), delimeter(" ")
 {
     currentStamp = 0;
 }
@@ -27,7 +27,18 @@ void MatchingEngine::start()
     }
 
     auto endTime = std::chrono::high_resolution_clock::now();
-    std::cout << std::chrono::duration_cast<std::chrono::microseconds>(endTime-startTime).count();
+    std::cout << std::chrono::duration_cast<std::chrono::microseconds>(endTime-startTime).count() << '\n';
+    for(auto& it : buyPrices) {
+        for(auto& it2 : it.second) {
+            std::cout << it.first << std::to_string(it2.first) << std::to_string(it2.second) << '\n';
+        }
+    }
+    std::cout << "sell prices " << '\n';
+    for(auto& it : sellPrices) {
+        for(auto& it2 : it.second) {
+            std::cout << it.first << std::to_string(it2.first) << ' ' <<  std::to_string(it2.second) << '\n';
+        }
+    }
 }
 
 void MatchingEngine::parseOrders(std::string &orderInfo, const std::string &delimeter, Order &order)
@@ -60,27 +71,29 @@ void MatchingEngine::orderMatch(Order &order, SocketWrapper &socketWrapper)
 {
     const auto ticker = order.tickerSymbol;
     const auto expiration = order.expiration;
+    //std::cout << order.price << ' ' << order.quantity  << '\n';
 
     if (order.action == OrderAction::BUY)
     {
         auto &tickerSellBook = orderBook.sellBooks[ticker];
+        // std::cout << "hereee2" << '\n';
         while (!tickerSellBook.empty())
         {
             auto bestSell = tickerSellBook.top();
             if (bestSell.expiration == -1 && !(currentStamp - bestSell.timeStamp < bestSell.expiration))
-            {
+            {            
                 tickerSellBook.pop();
                 break;
             }
 
             else if (order.price > bestSell.price || order.price == bestSell.price)
             {
+                
                 if (order.quantity < bestSell.quantity)
                 {
                     auto nextOrder = tickerSellBook.top();
                     nextOrder.quantity = bestSell.quantity - order.quantity;
-                    buyPrices[ticker][order.price] -= order.quantity;
-                    buyPrices[ticker][order.price] += bestSell.quantity;
+                    sellPrices[ticker][bestSell.price] -= order.quantity;
                     socketWrapper.writeToSocket("BUY," + ticker + "," + std::to_string(order.price) + "," + std::to_string(buyPrices[ticker][order.price]) + "# ");
                     tickerSellBook.pop();
                     tickerSellBook.push(nextOrder);
@@ -90,7 +103,7 @@ void MatchingEngine::orderMatch(Order &order, SocketWrapper &socketWrapper)
                 else if (order.quantity == bestSell.quantity)
                 {
                     tickerSellBook.pop();
-                    buyPrices[ticker][order.price] -= order.quantity;
+                    sellPrices[ticker][order.price] -= order.quantity;
                     socketWrapper.writeToSocket("BUY," + ticker + "," + std::to_string(order.price) + "," + std::to_string(buyPrices[ticker][order.price]) + "# ");
                     std::cout << order.clientName << " purchased " << order.quantity << " share of " << ticker << " from " << bestSell.clientName << " for $ " << bestSell.price << "/share" << std::endl;
                     return;
@@ -98,11 +111,12 @@ void MatchingEngine::orderMatch(Order &order, SocketWrapper &socketWrapper)
                 else
                 {
                     order.quantity -= bestSell.quantity;
+                    sellPrices[ticker][bestSell.price] -= bestSell.quantity;
                     tickerSellBook.pop();
-                    std::cout << order.clientName << " purchased " << order.quantity << " share of " << ticker << " from " << bestSell.clientName << " for $ " << bestSell.price << "/share" << std::endl;
+                    std::cout << order.clientName << " purchased " << bestSell.quantity << " share of " << ticker << " from " << bestSell.clientName << " for $ " << bestSell.price << "/share" << std::endl;
                 }
             }
-
+            
             else
             {
                 // no match at current buy price
@@ -144,8 +158,7 @@ void MatchingEngine::orderMatch(Order &order, SocketWrapper &socketWrapper)
                     tickerBuyBook.pop();
                     nextOrder.quantity = bestBuy.quantity - order.quantity;
                     tickerBuyBook.push(nextOrder);
-                    sellPrices[ticker][bestBuy.price] -= order.quantity;
-                    sellPrices[ticker][bestBuy.price] += bestBuy.quantity;
+                    buyPrices[ticker][bestBuy.price] -= order.quantity;
                     socketWrapper.writeToSocket("SELL," + ticker + "," + std::to_string(order.price) + "," + std::to_string(sellPrices[ticker][order.price]) + "# ");
                     std::cout << bestBuy.clientName << " purchased " << order.quantity << " share of " << ticker << " from " << order.clientName << " for $ " << bestBuy.price << "/share" << std::endl;
                     return;
@@ -153,7 +166,7 @@ void MatchingEngine::orderMatch(Order &order, SocketWrapper &socketWrapper)
                 else if (order.quantity == bestBuy.quantity)
                 {
                     tickerBuyBook.pop();
-                    sellPrices[ticker][bestBuy.price] -= bestBuy.quantity;
+                    buyPrices[ticker][bestBuy.price] -= bestBuy.quantity;
                     socketWrapper.writeToSocket("SELL," + ticker + "," + std::to_string(order.price) + "," + std::to_string(sellPrices[ticker][order.price]) + "# ");
                     std::cout << bestBuy.clientName << " purchased " << order.quantity << " share of " << ticker << " from " << order.clientName << " for $ " << bestBuy.price << "/share" << std::endl;
                     return;
@@ -161,6 +174,7 @@ void MatchingEngine::orderMatch(Order &order, SocketWrapper &socketWrapper)
                 else
                 {
                     order.quantity -= bestBuy.quantity;
+                    buyPrices[ticker][bestBuy.price] -= bestBuy.quantity;
                     tickerBuyBook.pop();
                     std::cout << bestBuy.clientName << " purchased " << order.quantity << " share of " << ticker << " from " << order.clientName << " for $ " << bestBuy.price << "/share" << std::endl;
                 }
@@ -170,6 +184,7 @@ void MatchingEngine::orderMatch(Order &order, SocketWrapper &socketWrapper)
                 if (expiration != 0)
                 {
                     orderBook.sellBooks[ticker].push(order);
+                    sellPrices[ticker][order.price] += bestBuy.quantity;
                     socketWrapper.writeToSocket("SELL," + ticker + "," + std::to_string(order.price) + "," + std::to_string(sellPrices[ticker][order.price]) + "# ");
                     return;
                 }
