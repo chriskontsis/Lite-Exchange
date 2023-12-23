@@ -26,7 +26,7 @@ class SocketThread(QObject):
             if not data:
                 break
             self.data_received.emit(data)
-            print(f"Received data: {data}")
+            # print(f"Received data: {data}")
 
         client_socket.close()
         server_socket.close()
