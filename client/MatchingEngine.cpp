@@ -1,7 +1,7 @@
 #include "MatchingEngine.hpp"
 
 
-MatchingEngine::MatchingEngine() : filename("data.txt"), delimeter(" ")
+MatchingEngine::MatchingEngine() : filename("test_data.txt"), delimeter(" ")
 {
     currentStamp = 0;
 }
