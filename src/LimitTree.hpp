@@ -161,7 +161,6 @@ namespace LOB
                     if (match.quantity == order.quantity)
                     {
                         cancel(match);
-
                         filledOrderWithUID(order.uid);
                     }
                     else
