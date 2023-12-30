@@ -124,7 +124,7 @@ namespace LOB
 
         void cancel(Order &order)
         {
-            auto &orderList = limits[order.price]->ordersList;
+            auto &orderList = order.limit->ordersList;
             auto limit_ = limits.at(order.price);
             auto qty = order.quantity;
 
