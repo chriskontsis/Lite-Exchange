@@ -125,7 +125,7 @@ namespace LOB
         void cancel(Order &order)
         {
             auto &orderList = order.limit->ordersList;
-            auto limit_ = limits.at(order.price);
+            auto limit_ = order.limit;
             auto qty = order.quantity;
 
             if (orderList.size() == 1) // last order at limit
@@ -139,9 +139,9 @@ namespace LOB
             {
                 --limit_->countOrdersAtLimit;
                 limit_->volume -= order.quantity;
-                auto orderIterator = limits[order.price]->orderIterators[order.uid];
-                limits[order.price]->orderIterators.erase(order.uid);
-                limits[order.price]->ordersList.erase(orderIterator);
+                auto orderIterator = limit_->orderIterators[order.uid];
+                limit_->orderIterators.erase(order.uid);
+                limit_->ordersList.erase(orderIterator);
             }
             --countOrdersInTree;
             volumeOfOrdersInTree -= qty;
