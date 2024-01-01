@@ -57,7 +57,7 @@ namespace LOB
     template <>
     inline void findBest<Side::BUY>(Limit **highestBuy, PriceLimitMap &limits)
     {
-        if (limits.empty())
+        if (limits.size() == 1) // last limit were removing
         {
             *highestBuy = nullptr;
             return;
@@ -70,7 +70,7 @@ namespace LOB
     template <>
     inline void findBest<Side::SELL>(Limit **lowestSell, PriceLimitMap &limits)
     {
-        if (limits.empty())
+        if (limits.size() == 1) // last limit we are removing
         {
             *lowestSell = nullptr;
             return;
@@ -120,7 +120,9 @@ namespace LOB
             }
             ++countOrdersInTree;
             volumeOfOrdersInTree += order.quantity;
+            if(best != nullptr) lastBestPrice = best->price;
         }
+
 
         void cancel(Order &order)
         {
