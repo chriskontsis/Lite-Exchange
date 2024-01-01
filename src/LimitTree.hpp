@@ -63,7 +63,7 @@ namespace LOB
             return;
         }
 
-        auto it = limits.rbegin();
+        auto it = std::next(limits.rbegin());
         *highestBuy = it->second;
     }
 
@@ -75,7 +75,7 @@ namespace LOB
             *lowestSell = nullptr;
             return;
         }
-        auto it = limits.begin();
+        auto it = std::next(limits.begin());
         *lowestSell = it->second;
     }
 
@@ -132,8 +132,9 @@ namespace LOB
 
             if (orderList.size() == 1) // last order at limit
             {
-                if (best == limit_)
+                if (best == limit_) {
                     findBest<side>(&best, limits);
+                }
                 limits.erase(order.price);
                 delete limit_;
             }

@@ -228,5 +228,85 @@ SCENARIO("Cancel single order from limit tree")
             }
         }
     }
+}
 
+SCENARIO("Cancel orders from limit tree starting with best first")
+{
+    Quantity qty = 100;
+    Price price = 1000, nextPrice = 1001;
+    GIVEN("Limit tree with 2 buy orders")
+    {
+        auto lt = LimitTree<Side::BUY>();
+        Order lower (1, price, qty, Side::BUY);
+        Order higher (1, nextPrice, qty, Side::BUY);
+        lt.limit(higher);
+        lt.limit(lower);
+        WHEN("the best buy order is cancelled")
+        {
+            lt.cancel(higher);
+            THEN("the limit tree is updated")
+            {
+                REQUIRE(lt.countOrdersInTree == 1);
+                REQUIRE(lt.countAt(nextPrice) == 0);
+                REQUIRE(lt.volumeAt(nextPrice) == 0);
+                REQUIRE(lt.volumeOfOrdersInTree == qty);
+                REQUIRE(lt.best->price == price);
+                REQUIRE(lt.best != nullptr);
+                REQUIRE(lt.best->ordersList.front().uid == lower.uid);
+                REQUIRE(price == lt.lastBestPrice);
+            }
+        }
+        WHEN("the lower price buy order is cancelled")
+        {
+            lt.cancel(lower);
+            THEN("the limit tree is updated")
+            {
+                REQUIRE(lt.countOrdersInTree == 1);
+                REQUIRE(lt.countAt(price) == 0);
+                REQUIRE(lt.volumeAt(price) == 0);
+                REQUIRE(lt.countAt(nextPrice) == 1);
+                REQUIRE(lt.best == higher.limit);
+                REQUIRE(lt.best->ordersList.size() == 1);
+                REQUIRE(nextPrice == lt.lastBestPrice);
+            }
+        }
+    }
+    GIVEN("Limit tree with 2 sell orders")
+    {
+        auto lt = LimitTree<Side::SELL>();
+        Order lower (1, price, qty, Side::SELL);
+        Order higher (1, nextPrice, qty, Side::SELL);
+        lt.limit(lower);
+        lt.limit(higher);
+        WHEN("the best sell order is cancelled")
+        {
+            lt.cancel(lower);
+            THEN("the limit tree is updated")
+            {
+                REQUIRE(lt.countOrdersInTree == 1);
+                REQUIRE(lt.countAt(price) == 0);
+                REQUIRE(lt.volumeAt(price) == 0);
+                REQUIRE(lt.volumeOfOrdersInTree == qty);
+                REQUIRE(lt.best->price == nextPrice);
+                REQUIRE(lt.best != nullptr);
+                REQUIRE(lt.best->ordersList.front().uid == higher.uid);
+                REQUIRE(nextPrice == lt.lastBestPrice);
+            }
+        }
+        WHEN("the higher sell order is cancelled")
+        {
+            lt.cancel(higher);
+            THEN("the limit tree is updated")
+            {
+                REQUIRE(lt.countOrdersInTree == 1);
+                REQUIRE(lt.countAt(nextPrice) == 0);
+                REQUIRE(lt.volumeAt(nextPrice) == 0);
+                REQUIRE(lt.volumeOfOrdersInTree == qty);
+                REQUIRE(lt.best->price == price);
+                REQUIRE(lt.best != nullptr);
+                REQUIRE(lt.best->ordersList.front().uid == lower.uid);
+                REQUIRE(price == lt.lastBestPrice);
+            }
+        }
+    }
 }
