@@ -73,7 +73,8 @@
         "numbers": "cpp",
         "semaphore": "cpp",
         "stop_token": "cpp",
-        "fstream": "cpp"
+        "fstream": "cpp",
+        "list": "cpp"
     },
     "cmake.sourceDirectory": "/Users/christopherkontsis/Desktop/C++/Matching-Engine/src"
 }

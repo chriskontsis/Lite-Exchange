@@ -98,52 +98,53 @@ namespace LOB
             limits.clear();
             volumeOfOrdersInTree = 0;
             countOrdersInTree = 0;
+            best = nullptr;
         }
 
-        void limit(Order &order)
+        void limit(Order *order)
         {
-            if (limits.count(order.price) == 0)
+            if (limits.count(order->price) == 0)
             {
-                order.limit = new Limit(order);
-                setBest<side>(&best, order.limit);
-                limits.emplace(order.price, order.limit);
-                limits[order.price]->ordersList.emplace_back(order);
-                limits[order.price]->orderIterators[order.uid] = std::prev(limits[order.price]->ordersList.end());
+                order->limit = new Limit(order);
+                setBest<side>(&best, order->limit);
+                limits.emplace(order->price, order->limit);
+                limits[order->price]->ordersList.push_back(order);
+                limits[order->price]->orderIterators.emplace(order->uid, std::prev(limits[order->price]->ordersList.end()));
             }
             else
             {
-                order.limit = limits.at(order.price);
-                ++order.limit->countOrdersAtLimit;
-                order.limit->volume += order.quantity;
-                limits[order.price]->ordersList.emplace_back(order);
-                limits[order.price]->orderIterators[order.uid] = std::prev(limits[order.price]->ordersList.end());
+                order->limit = limits.at(order->price);
+                ++order->limit->countOrdersAtLimit;
+                order->limit->volume += order->quantity;
+                limits[order->price]->ordersList.emplace_back(order);
+                limits[order->price]->orderIterators.emplace(order->uid, std::prev(limits[order->price]->ordersList.end()));
             }
             ++countOrdersInTree;
-            volumeOfOrdersInTree += order.quantity;
+            volumeOfOrdersInTree += order->quantity;
             if(best != nullptr) lastBestPrice = best->price;
         }
 
 
-        void cancel(Order &order)
+        void cancel(Order *order)
         {
-            auto &orderList = order.limit->ordersList;
-            auto limit_ = order.limit;
-            auto qty = order.quantity;
+            auto &orderList = order->limit->ordersList;
+            auto limit_ = order->limit;
+            auto qty = order->quantity;
 
             if (orderList.size() == 1) // last order at limit
             {
                 if (best == limit_) {
                     findBest<side>(&best, limits);
                 }
-                limits.erase(order.price);
+                limits.erase(order->price);
                 delete limit_;
             }
             else
             {
                 --limit_->countOrdersAtLimit;
-                limit_->volume -= order.quantity;
-                auto orderIterator = limit_->orderIterators[order.uid];
-                limit_->orderIterators.erase(order.uid);
+                limit_->volume -= order->quantity;
+                auto orderIterator = limit_->orderIterators[order->uid];
+                limit_->orderIterators.erase(order->uid);
                 limit_->ordersList.erase(orderIterator);
             }
             --countOrdersInTree;
@@ -153,31 +154,31 @@ namespace LOB
         }
 
         template <typename Callback>
-        void market(Order &order, Callback filledOrderWithUID)
+        void market(Order *order, Callback filledOrderWithUID)
         {
-            while (best != nullptr && canMatch<side>(best->price, order.price))
+            while (best != nullptr && canMatch<side>(best->price, order->price))
             {
 
-                auto &match = best->ordersList.front();
-                if (match.quantity >= order.quantity)
+                auto match = best->ordersList.front();
+                if (match->quantity >= order->quantity)
                 {
-                    if (match.quantity == order.quantity)
+                    if (match->quantity == order->quantity)
                     {
                         cancel(match);
-                        filledOrderWithUID(order.uid);
+                        filledOrderWithUID(order->uid);
                     }
                     else
                     {
-                        match.quantity -= order.quantity;
-                        match.limit->volume -= order.quantity;
-                        volumeOfOrdersInTree -= order.quantity;
+                        match->quantity -= order->quantity;
+                        match->limit->volume -= order->quantity;
+                        volumeOfOrdersInTree -= order->quantity;
                     }
-                    order.quantity = 0;
+                    order->quantity = 0;
                     return;
                 }
-                order.quantity -= match.quantity;
+                order->quantity -= match->quantity;
                 cancel(match);
-                filledOrderWithUID(match.uid);
+                filledOrderWithUID(match->uid);
             }
         }
 

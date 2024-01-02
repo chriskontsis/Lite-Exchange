@@ -44,15 +44,15 @@ SCENARIO("Adding single order to limit tree")
         WHEN("Order is added")
         {
             Order o = Order(1,price,qty,Side::BUY);
-            lt.limit(o);
+            lt.limit(&o);
             THEN("The tree adjusts to record the new order added")
             {
                 REQUIRE(lt.limits.size() == 1);
                 REQUIRE(qty == lt.volumeAt(price));
                 REQUIRE(1 == lt.countAt(price));
                 REQUIRE(lt.best != nullptr);
-                REQUIRE(o.uid == lt.best->ordersList.front().uid);
-                REQUIRE(o.uid == lt.best->ordersList.back().uid);
+                REQUIRE(&o == lt.best->ordersList.back());
+                REQUIRE(&o == lt.best->ordersList.front());
                 REQUIRE(lt.best == o.limit);
             }
         }
@@ -63,15 +63,15 @@ SCENARIO("Adding single order to limit tree")
         WHEN("Order is added")
         {
             Order o = Order(1,price,qty,Side::SELL);
-            lt.limit(o);
+            lt.limit(&o);
             THEN("The tree adjusts to record the new order added")
             {
                 REQUIRE(lt.limits.size() == 1);
                 REQUIRE(qty == lt.volumeAt(price));
                 REQUIRE(1 == lt.countAt(price));
                 REQUIRE(lt.best != nullptr);
-                REQUIRE(o.uid == lt.best->ordersList.front().uid);
-                REQUIRE(o.uid == lt.best->ordersList.back().uid);
+                REQUIRE(&o == lt.best->ordersList.back());
+                REQUIRE(&o == lt.best->ordersList.front());
                 REQUIRE(lt.best == o.limit);
             }
         }
@@ -89,8 +89,8 @@ SCENARIO("Adding two limit orders to tree best being first")
         {
             Order one {1,price,qty,Side::BUY};
             Order two {2,nextPrice,qty,Side::BUY};
-            lt.limit(two);
-            lt.limit(one);
+            lt.limit(&two);
+            lt.limit(&one);
             THEN("the limit tree contains the orders in the correct places")
             {
                 REQUIRE(lt.countOrdersInTree == 2);
@@ -101,7 +101,8 @@ SCENARIO("Adding two limit orders to tree best being first")
                 REQUIRE(nullptr != lt.best);
                 REQUIRE(lt.countOrdersInTree == 2);
                 REQUIRE(nextPrice == lt.best->price);
-                REQUIRE(two.uid == lt.best->ordersList.front().uid);
+                REQUIRE(&two == lt.best->ordersList.front());
+                REQUIRE(&two == lt.best->ordersList.back());
             }
         }
     }
@@ -112,8 +113,8 @@ SCENARIO("Adding two limit orders to tree best being first")
         {
             Order one {1,price,qty,Side::SELL};
             Order two {2,nextPrice,qty,Side::SELL};
-            lt.limit(one);
-            lt.limit(two);
+            lt.limit(&one);
+            lt.limit(&two);
             THEN("the limit tree contains the orders in the correct places")
             {
                 REQUIRE(lt.countOrdersInTree == 2);
@@ -124,7 +125,8 @@ SCENARIO("Adding two limit orders to tree best being first")
                 REQUIRE(nullptr != lt.best);
                 REQUIRE(lt.countOrdersInTree == 2);
                 REQUIRE(price == lt.best->price);
-                REQUIRE(one.uid == lt.best->ordersList.front().uid);
+                REQUIRE(&one == lt.best->ordersList.front());
+                REQUIRE(&one == lt.best->ordersList.back());
             }
         }
     }
@@ -142,8 +144,8 @@ SCENARIO("Adding two limit orders to tree best being last")
         {
             Order one {1,price,qty,Side::BUY};
             Order two {2,nextPrice,qty,Side::BUY};
-            lt.limit(one);
-            lt.limit(two);
+            lt.limit(&one);
+            lt.limit(&two);
             THEN("the limit tree contains the orders in the correct places")
             {
                 REQUIRE(lt.countOrdersInTree == 2);
@@ -154,7 +156,8 @@ SCENARIO("Adding two limit orders to tree best being last")
                 REQUIRE(nullptr != lt.best);
                 REQUIRE(lt.countOrdersInTree == 2);
                 REQUIRE(nextPrice == lt.best->price);
-                REQUIRE(two.uid == lt.best->ordersList.front().uid);
+                REQUIRE(&two == lt.best->ordersList.front());
+                REQUIRE(&two == lt.best->ordersList.back());
             }
         }
     }
@@ -165,8 +168,8 @@ SCENARIO("Adding two limit orders to tree best being last")
         {
             Order one {1,price,qty,Side::SELL};
             Order two {2,nextPrice,qty,Side::SELL};
-            lt.limit(two);
-            lt.limit(one);
+            lt.limit(&two);
+            lt.limit(&one);
             THEN("the limit tree contains the orders in the correct places")
             {
                 REQUIRE(lt.countOrdersInTree == 2);
@@ -177,7 +180,8 @@ SCENARIO("Adding two limit orders to tree best being last")
                 REQUIRE(nullptr != lt.best);
                 REQUIRE(lt.countOrdersInTree == 2);
                 REQUIRE(price == lt.best->price);
-                REQUIRE(one.uid == lt.best->ordersList.front().uid);
+                REQUIRE(&one == lt.best->ordersList.front());
+                REQUIRE(&one == lt.best->ordersList.back());
             }
         }
     }
@@ -196,10 +200,10 @@ SCENARIO("Cancel single order from limit tree")
     {
         auto lt = LimitTree<Side::BUY>();
         Order o = Order(1, price, qty, Side::BUY);
-        lt.limit(o);
+        lt.limit(&o);
         WHEN("The order is cancelled")
         {
-            lt.cancel(o);
+            lt.cancel(&o);
             THEN("the tree's data structures are updated accordingly")
             {
                 REQUIRE(lt.limits.size() == 0);
@@ -214,10 +218,10 @@ SCENARIO("Cancel single order from limit tree")
     {
         auto lt = LimitTree<Side::SELL>();
         Order o = Order(1, price, qty, Side::SELL);
-        lt.limit(o);
+        lt.limit(&o);
         WHEN("The order is cancelled")
         {
-            lt.cancel(o);
+            lt.cancel(&o);
             THEN("the tree's data structures are updated accordingly")
             {
                 REQUIRE(lt.limits.size() == 0);
@@ -239,11 +243,11 @@ SCENARIO("Cancel orders from limit tree starting with best first")
         auto lt = LimitTree<Side::BUY>();
         Order lower (1, price, qty, Side::BUY);
         Order higher (1, nextPrice, qty, Side::BUY);
-        lt.limit(higher);
-        lt.limit(lower);
+        lt.limit(&higher);
+        lt.limit(&lower);
         WHEN("the best buy order is cancelled")
         {
-            lt.cancel(higher);
+            lt.cancel(&higher);
             THEN("the limit tree is updated")
             {
                 REQUIRE(lt.countOrdersInTree == 1);
@@ -252,13 +256,13 @@ SCENARIO("Cancel orders from limit tree starting with best first")
                 REQUIRE(lt.volumeOfOrdersInTree == qty);
                 REQUIRE(lt.best->price == price);
                 REQUIRE(lt.best != nullptr);
-                REQUIRE(lt.best->ordersList.front().uid == lower.uid);
+                REQUIRE(lt.best->ordersList.front() == &lower);
                 REQUIRE(price == lt.lastBestPrice);
             }
         }
         WHEN("the lower price buy order is cancelled")
         {
-            lt.cancel(lower);
+            lt.cancel(&lower);
             THEN("the limit tree is updated")
             {
                 REQUIRE(lt.countOrdersInTree == 1);
@@ -276,11 +280,11 @@ SCENARIO("Cancel orders from limit tree starting with best first")
         auto lt = LimitTree<Side::SELL>();
         Order lower (1, price, qty, Side::SELL);
         Order higher (1, nextPrice, qty, Side::SELL);
-        lt.limit(lower);
-        lt.limit(higher);
+        lt.limit(&lower);
+        lt.limit(&higher);
         WHEN("the best sell order is cancelled")
         {
-            lt.cancel(lower);
+            lt.cancel(&lower);
             THEN("the limit tree is updated")
             {
                 REQUIRE(lt.countOrdersInTree == 1);
@@ -289,13 +293,13 @@ SCENARIO("Cancel orders from limit tree starting with best first")
                 REQUIRE(lt.volumeOfOrdersInTree == qty);
                 REQUIRE(lt.best->price == nextPrice);
                 REQUIRE(lt.best != nullptr);
-                REQUIRE(lt.best->ordersList.front().uid == higher.uid);
+                REQUIRE(lt.best->ordersList.front() == &higher);
                 REQUIRE(nextPrice == lt.lastBestPrice);
             }
         }
         WHEN("the higher sell order is cancelled")
         {
-            lt.cancel(higher);
+            lt.cancel(&higher);
             THEN("the limit tree is updated")
             {
                 REQUIRE(lt.countOrdersInTree == 1);
@@ -304,7 +308,7 @@ SCENARIO("Cancel orders from limit tree starting with best first")
                 REQUIRE(lt.volumeOfOrdersInTree == qty);
                 REQUIRE(lt.best->price == price);
                 REQUIRE(lt.best != nullptr);
-                REQUIRE(lt.best->ordersList.front().uid == lower.uid);
+                REQUIRE(lt.best->ordersList.front() == &lower);
                 REQUIRE(price == lt.lastBestPrice);
             }
         }

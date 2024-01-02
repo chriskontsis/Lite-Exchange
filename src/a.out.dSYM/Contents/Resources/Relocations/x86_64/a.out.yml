@@ -1,6 +1,6 @@
 ---
 triple:          'x86_64-apple-darwin'
-binary-path:     '/Users/christopherkontsis/Desktop/C++/Matching-Engine/src/main'
+binary-path:     '/Users/christopherkontsis/Desktop/C++/Matching-Engine/src/a.out'
 relocations:
   - { offsetInCU: 0x5C, offset: 0x5C, size: 0x8, addend: 0x0, symName: __ZNSt3__1L19piecewise_constructE, symObjAddr: 0xBBD0, symBinAddr: 0x10000FBA4, symSize: 0x0 }
   - { offsetInCU: 0xB860, offset: 0xB860, size: 0x8, addend: 0x0, symName: __ZNSt3__17advanceB7v160006INS_15__list_iteratorIPN3LOB5OrderEPvEEllvEEvRT_T0_, symObjAddr: 0x8FE0, symBinAddr: 0x10000B7A0, symSize: 0x50 }

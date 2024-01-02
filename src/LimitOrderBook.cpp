@@ -22,7 +22,7 @@ void LimitOrderBook::limitBuy(UID orderUID, Quantity quantity, Price price)
     uidOrderMap.emplace(orderUID, Order(orderUID, quantity, price, Side::BUY));
     if (asks.best != nullptr && price >= asks.best->price)
     {
-        asks.market(uidOrderMap.at(orderUID), [&](UID orderUID)
+        asks.market(&uidOrderMap.at(orderUID), [&](UID orderUID)
                     { uidOrderMap.erase(orderUID); });
         if (uidOrderMap.at(orderUID).quantity == 0)
         {
@@ -30,7 +30,7 @@ void LimitOrderBook::limitBuy(UID orderUID, Quantity quantity, Price price)
             return;
         }
     }
-    bids.limit(uidOrderMap.at(orderUID));
+    bids.limit(&uidOrderMap.at(orderUID));
 }
 
 void LimitOrderBook::limitSell(UID orderUID, Quantity quantity, Price price)
@@ -38,7 +38,7 @@ void LimitOrderBook::limitSell(UID orderUID, Quantity quantity, Price price)
     uidOrderMap.emplace(orderUID, Order(orderUID, quantity, price, Side::BUY));
     if (bids.best != nullptr && price <= bids.best->price)
     {
-        bids.market(uidOrderMap.at(orderUID), [&](UID orderUID)
+        bids.market(&uidOrderMap.at(orderUID), [&](UID orderUID)
                     { uidOrderMap.erase(orderUID); });
         if (uidOrderMap.at(orderUID).quantity == 0)
         {
@@ -46,11 +46,11 @@ void LimitOrderBook::limitSell(UID orderUID, Quantity quantity, Price price)
             return;
         }
     }
-    asks.limit(uidOrderMap.at(orderUID));
+    asks.limit(&uidOrderMap.at(orderUID));
 }
 
 void LimitOrderBook::market(Side side, UID orderUID, Quantity quantity)
-{
+{   
     if (side == Side::BUY)
         return marketBuy(orderUID, quantity);
     else
@@ -60,50 +60,50 @@ void LimitOrderBook::market(Side side, UID orderUID, Quantity quantity)
 void LimitOrderBook::marketBuy(UID orderUID, Quantity quantity)
 {
     Order order(orderUID, 0, quantity, Side::BUY);
-    asks.market(order, [&](UID orderUID)
+    asks.market(&order, [&](UID orderUID)
                 { uidOrderMap.erase(orderUID); });
 }
 
 void LimitOrderBook::marketSell(UID orderUID, Quantity quantity)
 {
     Order order(orderUID, 0, quantity, Side::SELL);
-    bids.market(order, [&](UID orderUID)
+    bids.market(&order, [&](UID orderUID)
                 { uidOrderMap.erase(orderUID); });
 }
 
 void LimitOrderBook::reduce(UID orderUID, Quantity quantity)
 {
-    auto &order = uidOrderMap.at(orderUID);
-    if (quantity > order.quantity)
+    auto order = &uidOrderMap.at(orderUID);
+    if (quantity > order->quantity)
     {
         throw "Quantity to high for order";
     }
-    order.quantity -= quantity;
-    order.limit->volume -= quantity;
-    if (order.side == Side::BUY)
+    order->quantity -= quantity;
+    order->limit->volume -= quantity;
+    if (order->side == Side::BUY)
     {
         bids.volumeOfOrdersInTree -= quantity;
-        if (order.quantity == 0)
+        if (order->quantity == 0)
         {
             bids.cancel(order);
-            uidOrderMap.erase(order.uid);
+            uidOrderMap.erase(order->uid);
         }
     }
     else
     {
         asks.volumeOfOrdersInTree -= quantity;
-        if (order.quantity == 0)
+        if (order->quantity == 0)
         {
             asks.cancel(order);
-            uidOrderMap.erase(order.uid);
+            uidOrderMap.erase(order->uid);
         }
     }
 }
 
 void LimitOrderBook::cancel(UID orderUID)
 {
-    auto &order = uidOrderMap.at(orderUID);
-    if (order.side == Side::BUY)
+    auto order = &uidOrderMap.at(orderUID);
+    if (order->side == Side::BUY)
         bids.cancel(order);
     else
         asks.cancel(order);
