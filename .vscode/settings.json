@@ -76,5 +76,6 @@
         "fstream": "cpp",
         "list": "cpp"
     },
-    "cmake.sourceDirectory": "/Users/christopherkontsis/Desktop/C++/Matching-Engine/src"
+    "cmake.sourceDirectory": "/Users/christopherkontsis/Desktop/C++/Matching-Engine/src",
+    "folder-color.pathColors": []
 }

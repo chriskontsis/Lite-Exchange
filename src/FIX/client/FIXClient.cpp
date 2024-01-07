@@ -22,6 +22,7 @@ int main()
       new FIX::SocketInitiator( client, storeFactory, settings, logFactory ) );
     
     initiator->start();
+    client.run();
     initiator->stop();
 
 }

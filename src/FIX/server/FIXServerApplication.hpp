@@ -33,4 +33,4 @@ public:
     void onMessage( const FIX42::NewOrderSingle&, const FIX::SessionID& );
 };
 
-#endif;
+#endif

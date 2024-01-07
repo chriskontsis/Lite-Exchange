@@ -10,5 +10,6 @@ void FIXServerApplication::onMessage(const FIX42::NewOrderSingle&, const FIX::Se
     FIX::ClOrdID clOrdID;
     FIX::Account account;
 
+    std::cout << "MESSAGE RECIEVED" << '\n';
     
 }

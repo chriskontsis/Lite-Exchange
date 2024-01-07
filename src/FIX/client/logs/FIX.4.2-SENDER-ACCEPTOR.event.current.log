@@ -1,0 +1,10 @@
+20240107-19:52:15.929000000 : Created session
+20240107-19:52:15.933000000 : Connecting to 127.0.0.1 on port 9876 (Source :0)
+20240107-19:52:15.939000000 : Initiated logon request
+20240107-19:52:58.172000000 : Created session
+20240107-19:52:58.174000000 : Connecting to 127.0.0.1 on port 9876 (Source :0)
+20240107-19:54:40.747000000 : Created session
+20240107-19:54:40.748000000 : Connecting to 127.0.0.1 on port 9876 (Source :0)
+20240107-19:54:40.749000000 : Initiated logon request
+20240107-19:54:40.749000000 : Socket Error: Connection reset by peer.
+20240107-19:54:40.749000000 : Disconnecting

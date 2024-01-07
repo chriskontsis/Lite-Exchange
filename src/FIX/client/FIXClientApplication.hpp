@@ -9,6 +9,7 @@
 #include "quickfix/config.h"
 
 #include <iostream>
+#include <fstream>
 
 class FIXClientApplication : public FIX::Application, public FIX::MessageCracker
 {

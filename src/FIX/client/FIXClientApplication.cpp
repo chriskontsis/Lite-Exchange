@@ -3,7 +3,16 @@
 
 void FIXClientApplication::run() 
 {
-    
+  std::cout << "HERE" << '\n';
+  std::ifstream ifs("test_data.txt");
+  std::string line;
+  FIX::Message order;
+  
+  while(getline(ifs, line))
+  {
+    FIX::Message order(line);
+    FIX::Session::sendToTarget(order);
+  }
 }
 
 void FIXClientApplication::onLogon( const FIX::SessionID& sessionID )
