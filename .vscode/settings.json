@@ -74,7 +74,8 @@
         "semaphore": "cpp",
         "stop_token": "cpp",
         "fstream": "cpp",
-        "list": "cpp"
+        "list": "cpp",
+        "*.ipp": "cpp"
     },
     "cmake.sourceDirectory": "/Users/christopherkontsis/Desktop/C++/Matching-Engine/src",
     "folder-color.pathColors": []
