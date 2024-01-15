@@ -13,7 +13,6 @@ void FIXServer::handleAccept(std::shared_ptr<ConnectionHandler> connection,  con
 {
     if(!err)
     {
-        std::cout << "started connecition" << '\n';
         connection->start();
     }
     startAccept();
