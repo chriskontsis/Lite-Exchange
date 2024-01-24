@@ -1,40 +1,37 @@
 #ifndef FIX_SESSION_
 #define FIX_SESSION_
 
-#include <string> 
-#include <ctime>
-#include <cstdint>
+#include <memory>
+#include <boost/asio.hpp>
 
 #include "FixMessage.hpp"
-
+#include "Utility/MessageQueue.hpp"
 
 namespace fix
 {
 
-
-class FixSession
-{
-public:
-    FixSession();
-    FixSession(const FixSession& other);
-    ~FixSession();
-
-    int receive(FixMessage&);
-    int send(FixMessage&);
-
+    class FixSession : std::enable_shared_from_this<FixSession>
+    {
+        public:
+            FixSession() {}
     
-    void close();
+            
+            bool connectToServer();
+            bool disconnect();
+            bool isConnected();
 
-     
-private:
-    int fixVersion;
-    int outgoingSeqeunceNumber;
-    int incomingSequenceNumber;
-    std::string targetCompId;
-    // sender compid shared by all sessions
-    static std::string COMPId;
+            bool send(const FixMessage& msg);
 
-};
-
+        protected:
+            // each session has unique socket to a remote
+            boost::asio::ip::tcp::socket socket_;
+            // context is shared with whole asio instance
+            boost::asio::io_context& io_context_;
+            // queue holds all messsages to be sent to the remote side of this connection
+            TSQueue<FixMessage> qMessagesOut;
+            TSQueue<FixMessage>& qMessagesIn;
+            
+    };
 }
+
 #endif
