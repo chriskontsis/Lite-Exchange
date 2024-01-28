@@ -26,6 +26,8 @@ public:
         try
         {
             connection = std::make_unique<FixSession>();
+            boost::asio::ip::tcp::resolver resolver(io_context_);
+            
         }
         catch(const std::exception& e)
         {

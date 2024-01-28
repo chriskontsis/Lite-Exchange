@@ -75,7 +75,18 @@
         "stop_token": "cpp",
         "fstream": "cpp",
         "list": "cpp",
-        "*.ipp": "cpp"
+        "*.ipp": "cpp",
+        "future": "cpp",
+        "iomanip": "cpp",
+        "map": "cpp",
+        "regex": "cpp",
+        "set": "cpp",
+        "stack": "cpp",
+        "unordered_set": "cpp",
+        "codecvt": "cpp",
+        "format": "cpp",
+        "span": "cpp",
+        "cinttypes": "cpp"
     },
     "cmake.sourceDirectory": "/Users/christopherkontsis/Desktop/C++/Matching-Engine/src",
     "folder-color.pathColors": []

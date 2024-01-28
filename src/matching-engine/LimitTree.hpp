@@ -10,6 +10,7 @@ namespace LOB
 
     using Count = u_int32_t;
     using PriceLimitMap = std::map<Price, Limit *>;
+    using ExistingPriceLimitMap = std::unordered_map<Price, Limit*>;
 
     template <Side side>
     inline bool canMatch([[maybe_unused]] Price limit, [[maybe_unused]] Price market) { return true; }
@@ -86,15 +87,16 @@ namespace LOB
         Volume volumeOfOrdersInTree{0};
         Count countOrdersInTree{0};
         PriceLimitMap limits;
+        ExistingPriceLimitMap existingLimitPrices;
         Limit *best = nullptr;
         Price lastBestPrice{0};
 
         void clear()
         {
-            for (auto it = limits.begin(); it != limits.end(); ++it)
-            {
-                it->second->ordersList.clear();
-            }
+            // for (auto it = limits.begin(); it != limits.end(); ++it)
+            // {
+            //     it->second->ordersList.clear();
+            // }
             limits.clear();
             volumeOfOrdersInTree = 0;
             countOrdersInTree = 0;
@@ -103,21 +105,22 @@ namespace LOB
 
         void limit(Order *order)
         {
-            if (limits.count(order->price) == 0)
+            if (!existingLimitPrices.contains(order->price))
             {
                 order->limit = new Limit(order);
                 setBest<side>(&best, order->limit);
                 limits.emplace(order->price, order->limit);
-                limits[order->price]->ordersList.push_back(order);
-                limits[order->price]->orderIterators.emplace(order->uid, std::prev(limits[order->price]->ordersList.end()));
+                existingLimitPrices.emplace(order->price, order->limit);
+                order->limit->ordersList.push_back(order);
+                order->limit->orderIterators.emplace(order->uid, std::prev(order->limit->ordersList.end()));
             }
             else
             {
-                order->limit = limits.at(order->price);
+                order->limit = existingLimitPrices[order->price];
                 ++order->limit->countOrdersAtLimit;
                 order->limit->volume += order->quantity;
-                limits[order->price]->ordersList.emplace_back(order);
-                limits[order->price]->orderIterators.emplace(order->uid, std::prev(limits[order->price]->ordersList.end()));
+                order->limit->ordersList.emplace_back(order);
+                order->limit->orderIterators.emplace(order->uid, std::prev(order->limit->ordersList.end()));
             }
             ++countOrdersInTree;
             volumeOfOrdersInTree += order->quantity;
@@ -131,12 +134,14 @@ namespace LOB
             auto limit_ = order->limit;
             auto qty = order->quantity;
 
-            if (orderList.size() == 1) // last order at limit
+            bool isLastOrder = (std::next(orderList.begin()) == orderList.end());
+            if (isLastOrder == 1) // last order at limit
             {
                 if (best == limit_) {
                     findBest<side>(&best, limits);
                 }
                 limits.erase(order->price);
+                existingLimitPrices.erase(order->price);
                 delete limit_;
             }
             else
@@ -153,8 +158,8 @@ namespace LOB
                 lastBestPrice = best->price;
         }
 
-        template <typename Callback>
-        void market(Order *order, Callback filledOrderWithUID)
+        template <typename Functor>
+        void market(Order *order, Functor filledOrderWithUID)
         {
             while (best != nullptr && canMatch<side>(best->price, order->price))
             {
