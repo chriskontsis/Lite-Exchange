@@ -1,6 +1,6 @@
 #define CATCH_CONFIG_MAIN
 #include "catch.hpp"
-#include "../src/LimitTree.hpp"
+#include "../../src/matching-engine/LimitTree.hpp"
 
 using namespace LOB;
 
