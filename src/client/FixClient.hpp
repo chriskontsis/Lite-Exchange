@@ -12,6 +12,8 @@
 #include "fix/FIxMessage.hpp"
 #include "fix/FixSession.hpp"
 
+using namespace fix;
+
 class FixClient
 {
 public:
