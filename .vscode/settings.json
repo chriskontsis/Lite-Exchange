@@ -86,7 +86,8 @@
         "codecvt": "cpp",
         "format": "cpp",
         "span": "cpp",
-        "cinttypes": "cpp"
+        "cinttypes": "cpp",
+        "__tree": "cpp"
     },
     "cmake.sourceDirectory": "/Users/christopherkontsis/Desktop/C++/Matching-Engine/src",
     "folder-color.pathColors": []

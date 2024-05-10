@@ -16,50 +16,50 @@ public:
     const T& front()
     {
         std::scoped_lock lck(mutex_);
-        return queue.front();
+        return ts_queue.front();
     }
 
     const T& back()
     {
         std::scoped_lock lck(mutex_);
-        return queue.back();
+        return ts_queue.back();
     }
 
     void push_back(const T& item)
     {
         std::scoped_lock lck(mutex_);
-        queue.emplace_back(std::move(item));
+        ts_queue.emplace_back(std::move(item));
     }
 
     void push_front(const T& item)
     {
         std::scoped_lock lck(mutex_);
-        queue.emplace_back(std::move(item));
+        ts_queue.emplace_back(std::move(item));
     }
 
     bool empty()
     {
         std::scoped_lock lck(mutex_);
-        return queue.empty();
+        return ts_queue.empty();
     }
 
     size_t count()
     {
         std::scoped_lock lck(mutex_);
-        return queue.size();
+        return ts_queue.size();
     }
 
     void clear()
     {
         std::scoped_lock lck(mutex_);
-        queue.clear();
+        ts_queue.clear();
     }
 
     T pop_front()
     {
         std::scoped_lock lck(mutex_);
         auto t = std::move(queue.front());
-        queue.pop_front();
+        ts_queue.pop_front();
         return t;
     }
 
@@ -67,14 +67,14 @@ public:
     {
         std::scoped_lock lck(mutex_);
         auto t = std::move(queue.back());
-        queue.pop_back();
+        ts_queue.pop_back();
         return t;
     }
 
 
 protected:
     std::mutex mutex_;
-    std::deque<T> queue;
+    std::deque<T> ts_queue;
 };
 
 #endif
