@@ -23,30 +23,37 @@ public:
         if(readPos.load(std::memory_order_acquire) == next_w) 
             return false;
         
-        buffer[w] = item;
+        ringBuffer[w] = item;
         writePos.store(next_w, std::memory_order_release);
             
         return true;
     }
 
-    void push(T val)
+    void push(const T& val)
     {
         while(!tryPublish(val));
     }
 
+    // Blocks until an item is available, then returns it.
+    T pop()
+    {
+        T out;
+        while(!tryConsume(out));
+        return out;
+    }
+
     // Queue Empty : readPos == writePos
 
-    T consume()
+    bool tryConsume(T& out)
     {
-        const int w = writePos.load(std::memory_order_acquire)
+        const int w = writePos.load(std::memory_order_acquire);
         const int r = readPos.load();
         if(r == w)
             return false;
 
-        
-
-        
-        return 
+        out = std::move(ringBuffer[r]);
+        readPos.store(increment(r), std::memory_order_release);
+        return true;
     }
 
 private:
