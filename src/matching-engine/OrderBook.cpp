@@ -28,7 +28,7 @@ void LimitOrderBook::limitBuy(UID orderUID, Quantity quantity, Price price)
 void LimitOrderBook::limitSell(UID orderUID, Quantity quantity, Price price)
 {
     UIDtoOrderMap.emplace(orderUID, std::make_shared<Order>(orderUID, price, Side::SELL, quantity));
-    if (bids.best != nullptr && price <= asks.best->priceAtLimit)
+    if (bids.best != nullptr && price <= bids.best->priceAtLimit)
     {
         bids.market(UIDtoOrderMap.at(orderUID), [&](UID orderUID)
                     { UIDtoOrderMap.erase(orderUID); });
@@ -51,14 +51,14 @@ void LimitOrderBook::market(Side side, UID orderUID, Quantity quantity)
 
 void LimitOrderBook::marketBuy(UID orderUID, Quantity quantity)
 {
-    auto order = std::make_shared<Order>(orderUID, 0, quantity, Side::BUY);
+    auto order = std::make_shared<Order>(orderUID, 0, Side::BUY, quantity);
     asks.market(order, [&](UID orderUID)
                 { UIDtoOrderMap.erase(orderUID); });
 }
 
 void LimitOrderBook::marketSell(UID orderUID, Quantity quantity)
 {
-    auto order = std::make_shared<Order>(orderUID, 0, quantity, Side::SELL);
+    auto order = std::make_shared<Order>(orderUID, 0, Side::SELL, quantity);
     bids.market(order, [&](UID orderUID)
                 { UIDtoOrderMap.erase(orderUID); });
 }

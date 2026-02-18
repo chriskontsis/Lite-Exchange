@@ -1,7 +1,6 @@
 #ifndef FIX_MESSAGE_HPP
 #define FIX_MESSAGE_HPP
 
-#include <string>
 #include <string_view>
 #include <charconv>
 #include "../matching-engine/OrderStructures.hpp"
