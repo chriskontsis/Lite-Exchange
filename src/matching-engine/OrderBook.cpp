@@ -63,6 +63,44 @@ void LimitOrderBook::marketSell(UID orderUID, Quantity quantity)
                 { UIDtoOrderMap.erase(orderUID); });
 }
 
+void LimitOrderBook::reduce(UID orderUID, Quantity quantity) {
+    auto it = UIDtoOrderMap.find(orderUID);
+    if(it == UIDtoOrderMap.end()) return;
+
+    auto& order = it->second;
+    if(quantity >= order->quantity) {
+        cancel(orderUID);
+        return;
+    }
+
+    order->quantity -= quantity;
+    order->parentLimit->volumeAtLimit -= quantity;
+
+    if(order->side == Side::BUY) 
+        bids.volumeOfTree -= quantity;
+    else 
+        asks.volumeOfTree -= quantity;
+}
+
+void LimitOrderBook::cancel(UID orderUID) {
+    auto it = UIDtoOrderMap.find(orderUID);
+    if(it == UIDtoOrderMap.end()) return;
+
+    auto& order = it->second;
+    if(order->side == Side::BUY) 
+        bids.cancel(order);
+    else 
+        asks.cancel(order);
+
+    UIDtoOrderMap.erase(it);
+}
+void LimitOrderBook::clear() {
+    asks.clear();
+    bids.clear();
+    UIDtoOrderMap.clear();
+}
+
+
 
 
 
