@@ -2,6 +2,7 @@
 #define FIX_MESSAGE_HPP
 
 #include <string_view>
+#include <cstring>
 #include <charconv>
 #include "../matching-engine/OrderStructures.hpp"
 
@@ -23,6 +24,7 @@ namespace fix
         LOB::UID uid = 0;
         LOB::Quantity quantity = 0;
         LOB::Price price = 0; // 0 for market orders
+        char symbol[8] = {};
     };
 
     class FixMessage
@@ -71,11 +73,18 @@ namespace fix
                     case 44:
                         std::from_chars(val.data(), val.data() + val.size(), req.price);
                         break;
+                    case 55:
+                    {
+                        auto len = val.size() < 8 ? val.size() : 8;
+                        std::memcpy(req.symbol, val.data(), len); // cant = assign direct into char[] use memcpy
+                        break;
+                    }
                     }
                 }
 
-                if(pipe == rawOrder.npos) break;
-                rawOrder.remove_prefix(pipe + 1);  // advance past the '|'
+                if (pipe == rawOrder.npos)
+                    break;
+                rawOrder.remove_prefix(pipe + 1); // advance past the '|'
             }
 
             return req;
