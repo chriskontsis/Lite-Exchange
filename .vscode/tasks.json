@@ -9,9 +9,14 @@
                 "-fcolor-diagnostics",
                 "-fansi-escape-codes",
                 "-g",
-                "*.cpp",
+                "${workspaceFolder}/src/server/serverMain.cpp",
+                "${workspaceFolder}/src/matching-engine/OrderBook.cpp",
+                "-I${workspaceFolder}/src",
+                "-I/opt/homebrew/opt/boost/include",
+                "-L/opt/homebrew/opt/boost/lib",
+                "-lboost_system",
                 "-o",
-                "${fileDirname}/a.out"
+                "${workspaceFolder}/bin/exchange"
             ],
             "options": {
                 "cwd": "${fileDirname}"
