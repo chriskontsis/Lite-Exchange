@@ -17,10 +17,6 @@ namespace fix
         static constexpr int BUFFER_SIZE = 1024;
         char data_[BUFFER_SIZE];
 
-    public:
-        FixSession(boost::asio::ip::tcp::socket socket, EngineDispatcher &dispatcher)
-            : socket_(std::move(socket)), dispatcher_(dispatcher) {}
-
         void doRead()
         {
             auto self = shared_from_this();
@@ -39,6 +35,23 @@ namespace fix
                     doRead();
                 });
         }
+
+        void sendData(std::string_view data)
+        {
+            auto self = shared_from_this();
+            boost::asio::async_write(socket_, boost::asio::buffer(data.data(), data.size()),
+                                     [this, self](boost::system::error_code ec, std::size_t)
+                                     {
+                                         if (ec)
+                                         {
+                                             std::cout << "Send error\n";
+                                         }
+                                     });
+        }
+
+    public:
+        FixSession(boost::asio::ip::tcp::socket socket, EngineDispatcher &dispatcher)
+            : socket_(std::move(socket)), dispatcher_(dispatcher) {}
 
         void start()
         {

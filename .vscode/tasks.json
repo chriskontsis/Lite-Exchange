@@ -2,6 +2,36 @@
     "tasks": [
         {
             "type": "cppbuild",
+            "label": "Build & Run Tests",
+            "command": "/usr/bin/clang++",
+            "args": [
+                "-std=c++20",
+                "-fcolor-diagnostics",
+                "-fansi-escape-codes",
+                "-g",
+                "${workspaceFolder}/test/FIX/Test_FixMessage.cpp",
+                "${workspaceFolder}/src/matching-engine/OrderBook.cpp",
+                "-I${workspaceFolder}/src",
+                "-I/opt/homebrew/opt/boost/include",
+                "-I/opt/homebrew/opt/googletest/include",
+                "-L/opt/homebrew/opt/boost/lib",
+                "-L/opt/homebrew/opt/googletest/lib",
+                "-lboost_system",
+                "-lgtest",
+                "-lgtest_main",
+                "-o",
+                "${workspaceFolder}/bin/tests",
+                "&&",
+                "${workspaceFolder}/bin/tests"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": ["$gcc"],
+            "group": "test"
+        },
+        {
+            "type": "cppbuild",
             "label": "C/C++: clang++ build all CPP files",
             "command": "/usr/bin/clang++",
             "args": [
