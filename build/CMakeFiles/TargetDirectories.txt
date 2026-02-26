@@ -1,7 +1,0 @@
-/Users/chriskontsis/Desktop/Lite-Exchange/build/CMakeFiles/exchange_lib.dir
-/Users/chriskontsis/Desktop/Lite-Exchange/build/CMakeFiles/exchange.dir
-/Users/chriskontsis/Desktop/Lite-Exchange/build/CMakeFiles/fix_tests.dir
-/Users/chriskontsis/Desktop/Lite-Exchange/build/CMakeFiles/client.dir
-/Users/chriskontsis/Desktop/Lite-Exchange/build/CMakeFiles/test.dir
-/Users/chriskontsis/Desktop/Lite-Exchange/build/CMakeFiles/edit_cache.dir
-/Users/chriskontsis/Desktop/Lite-Exchange/build/CMakeFiles/rebuild_cache.dir

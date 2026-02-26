@@ -1,2 +1,0 @@
-/usr/bin/ar qc libexchange_lib.a "CMakeFiles/exchange_lib.dir/src/matching-engine/OrderBook.cpp.o"
-/usr/bin/ranlib libexchange_lib.a
