@@ -29,9 +29,19 @@ namespace fix
                         std::cout << "Client disconnected\n";
                         return;
                     }
-                    auto req = FixMessage::parse(std::string_view(data_, length));
-                    if (req.type != MsgType::UNKNOWN)
-                        dispatcher_.route(req);
+                    std::string_view buf(data_, length);
+                    while(!buf.empty())
+                    {
+                        auto end = buf.find('\n');
+                        if(end == std::string_view::npos) break;
+                        auto req = FixMessage::parse(buf.substr(0, end));
+                        if(req.type != MsgType::UNKNOWN)
+                        {
+                            std::cout << "Routing order type= " << (int)req.type << " symbol= " << req.symbol << '\n';
+                            dispatcher_.route(req);
+                        }
+                        buf.remove_prefix(end+1);
+                    }
                     doRead();
                 });
         }

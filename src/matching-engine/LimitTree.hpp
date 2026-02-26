@@ -159,12 +159,13 @@ namespace LOB
             while(best != nullptr && canMatch<side>(best->priceAtLimit, order->price))
             {
                 auto& match = best->orderList.front();
+                UID matchUID = match->uid;
                 if(match->quantity >= order->quantity) 
                 {
                     if(match->quantity == order->quantity) 
                     {
                         cancel(match);
-                        filledOrderWithUID(order->uid);
+                        filledOrderWithUID(matchUID);
                     }
                     else 
                     {
@@ -177,7 +178,7 @@ namespace LOB
                 }
                 order->quantity -= match->quantity;
                 cancel(match);
-                filledOrderWithUID(match->uid);
+                filledOrderWithUID(matchUID);
             }
         }
 

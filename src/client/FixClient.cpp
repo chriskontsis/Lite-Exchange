@@ -29,8 +29,9 @@ namespace fix
     void FixClient::doRead()
     {
         socket_.async_read_some(boost::asio::buffer(data_, BUFFER_SIZE),
-                                [this](boost::system::error_code ec, std::size_t length) {
-                                    if(ec)
+                                [this](boost::system::error_code ec, std::size_t length)
+                                {
+                                    if (ec)
                                     {
                                         std::cout << "Disconnected from server\n";
                                         return;
@@ -38,5 +39,10 @@ namespace fix
                                     std::cout << "Server: " << std::string_view(data_, length) << '\n';
                                     doRead();
                                 });
+    }
+
+    void FixClient::send(const std::string& msg)
+    {
+        boost::asio::write(socket_, boost::asio::buffer(msg));
     }
 } // namespace fix

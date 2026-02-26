@@ -30,3 +30,9 @@ add_executable(fix_tests
 target_link_libraries(fix_tests PRIVATE exchange_lib GTest::gtest 
 GTest::gtest_main)
 add_test(NAME FixMessageTests COMMAND fix_tests)
+
+add_executable(client
+    src/client/ClientMain.cpp
+    src/client/FixClient.cpp)
+
+target_link_libraries(client PRIVATE exchange_lib)

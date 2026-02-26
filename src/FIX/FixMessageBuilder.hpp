@@ -15,7 +15,7 @@ namespace fix
                 +  field(11, uid)
                 +  field(38, qty)
                 +  field(44, price)
-                +  field(55, symbol);
+                +  field(55, symbol) + "\n";
         }
         template<LOB::Side S>
         static std::string market(LOB::UID uid, LOB::Quantity qty, std::string_view symbol)
@@ -24,14 +24,14 @@ namespace fix
             return std::string("35=D|") + side + "40=1|"
                     +  field(11, uid)
                     +  field(38, qty)
-                    +  field(55, symbol);
+                    +  field(55, symbol) + "\n";
         }
 
         static std::string cancel(LOB::UID uid, std::string_view symbol)
         {
             return std::string("35=F|")
                 +  field(11,uid)
-                +  field(55, symbol);
+                +  field(55, symbol) + "\n";
         }
     private:
         template <typename T>
