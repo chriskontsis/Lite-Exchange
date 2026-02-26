@@ -135,4 +135,5 @@ set(CMAKE_DEPEND_INFO_FILES
   "CMakeFiles/exchange_lib.dir/DependInfo.cmake"
   "CMakeFiles/exchange.dir/DependInfo.cmake"
   "CMakeFiles/fix_tests.dir/DependInfo.cmake"
+  "CMakeFiles/client.dir/DependInfo.cmake"
   )

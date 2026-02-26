@@ -165,6 +165,67 @@ fix_tests/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/fix_tests.dir/build.make CMakeFiles/fix_tests.dir/build
 .PHONY : fix_tests/fast
 
+#=============================================================================
+# Target rules for targets named client
+
+# Build rule for target.
+client: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 client
+.PHONY : client
+
+# fast build rule for target.
+client/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/build
+.PHONY : client/fast
+
+src/client/ClientMain.o: src/client/ClientMain.cpp.o
+.PHONY : src/client/ClientMain.o
+
+# target to build an object file
+src/client/ClientMain.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/src/client/ClientMain.cpp.o
+.PHONY : src/client/ClientMain.cpp.o
+
+src/client/ClientMain.i: src/client/ClientMain.cpp.i
+.PHONY : src/client/ClientMain.i
+
+# target to preprocess a source file
+src/client/ClientMain.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/src/client/ClientMain.cpp.i
+.PHONY : src/client/ClientMain.cpp.i
+
+src/client/ClientMain.s: src/client/ClientMain.cpp.s
+.PHONY : src/client/ClientMain.s
+
+# target to generate assembly for a file
+src/client/ClientMain.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/src/client/ClientMain.cpp.s
+.PHONY : src/client/ClientMain.cpp.s
+
+src/client/FixClient.o: src/client/FixClient.cpp.o
+.PHONY : src/client/FixClient.o
+
+# target to build an object file
+src/client/FixClient.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/src/client/FixClient.cpp.o
+.PHONY : src/client/FixClient.cpp.o
+
+src/client/FixClient.i: src/client/FixClient.cpp.i
+.PHONY : src/client/FixClient.i
+
+# target to preprocess a source file
+src/client/FixClient.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/src/client/FixClient.cpp.i
+.PHONY : src/client/FixClient.cpp.i
+
+src/client/FixClient.s: src/client/FixClient.cpp.s
+.PHONY : src/client/FixClient.s
+
+# target to generate assembly for a file
+src/client/FixClient.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/src/client/FixClient.cpp.s
+.PHONY : src/client/FixClient.cpp.s
+
 src/matching-engine/OrderBook.o: src/matching-engine/OrderBook.cpp.o
 .PHONY : src/matching-engine/OrderBook.o
 
@@ -246,9 +307,16 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... test"
+	@echo "... client"
 	@echo "... exchange"
 	@echo "... exchange_lib"
 	@echo "... fix_tests"
+	@echo "... src/client/ClientMain.o"
+	@echo "... src/client/ClientMain.i"
+	@echo "... src/client/ClientMain.s"
+	@echo "... src/client/FixClient.o"
+	@echo "... src/client/FixClient.i"
+	@echo "... src/client/FixClient.s"
 	@echo "... src/matching-engine/OrderBook.o"
 	@echo "... src/matching-engine/OrderBook.i"
 	@echo "... src/matching-engine/OrderBook.s"

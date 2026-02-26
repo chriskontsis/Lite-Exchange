@@ -1,0 +1,1 @@
+/usr/bin/clang++  -arch arm64 -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/client.dir/src/client/ClientMain.cpp.o CMakeFiles/client.dir/src/client/FixClient.cpp.o -o client  libexchange_lib.a
