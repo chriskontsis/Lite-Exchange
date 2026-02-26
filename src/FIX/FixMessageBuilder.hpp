@@ -11,7 +11,7 @@ namespace fix
         static std::string limit(LOB::UID uid, LOB::Quantity qty, LOB::Price price, std::string_view symbol)
         {
             constexpr const char* side = (S == LOB::Side::BUY) ? "54=1|" : "54=2|";
-            return std::stinrg("35=D|") + side + "40=2|"
+            return std::string("35=D|") + side + "40=2|"
                 +  field(11, uid)
                 +  field(38, qty)
                 +  field(44, price)
@@ -25,6 +25,13 @@ namespace fix
                     +  field(11, uid)
                     +  field(38, qty)
                     +  field(55, symbol);
+        }
+
+        static std::string cancel(LOB::UID uid, std::string_view symbol)
+        {
+            return std::string("35=F|")
+                +  field(11,uid)
+                +  field(55, symbol);
         }
     private:
         template <typename T>
