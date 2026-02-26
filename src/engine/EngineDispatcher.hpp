@@ -5,8 +5,8 @@
 #include <atomic>
 #include <memory>
 #include <cstring>
-#include "../Utility/SPSC_Queue.hpp"
-#include "../FIX/FixMessage.hpp"
+#include "../utility/SPSC_Queue.hpp"
+#include "../fix/FixMessage.hpp"
 #include "../matching-engine/OrderBook.hpp"
 #ifdef __APPLE__
 #include <mach/thread_policy.h>
