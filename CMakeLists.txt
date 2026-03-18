@@ -44,3 +44,11 @@ add_executable(orderbook_tests
 target_link_libraries(orderbook_tests PRIVATE exchange_lib
 GTest::gtest GTest::gtest_main)
 add_test(NAME OrderBookTests COMMAND orderbook_tests)
+
+add_executable(spsc_tests
+    test/SPSC/Test_SPSC.cc
+)       
+
+target_link_libraries(spsc_tests PRIVATE exchange_lib
+GTest::gtest GTest::gtest_main)
+add_test(NAME SPSCTests COMMAND spsc_tests)
