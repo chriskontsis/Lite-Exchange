@@ -29,7 +29,12 @@ namespace LOB
             void marketSell(UID orderUID, Quantity quantity);
             void reduce(UID orderUID, Quantity quantity);
             void cancel(UID orderUId);
-
+            Price bestBid() const { return bids.best ? bids.best->priceAtLimit : 0; }
+            Price bestAsk() const { return asks.best ? asks.best->priceAtLimit : 0; }
+            Quantity volumeAt(Side side, Price price) const {
+                return (side == Side::BUY) ? bids.volumeAt(price) : asks.volumeAt(price);
+            }
+            bool hasOrder(UID uid) const { return UIDtoOrderMap.contains(uid); } 
     };
 };
 

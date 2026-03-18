@@ -182,10 +182,11 @@ namespace LOB
             }
         }
 
-        inline Volume volumeAt(Price price)
+        inline Volume volumeAt(Price price) const
         {
-            if (limits.count(price))
-                return limits[price]->volumeAtLimit;
+            auto it = limits.find(price);
+            if (it != limits.end())
+                return it->second->volumeAtLimit;
             return 0;
         }
         inline Count countAt(Price price)
