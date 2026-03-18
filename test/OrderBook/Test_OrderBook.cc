@@ -97,3 +97,45 @@ TEST_F(OrderBookTest, ReduceToZeroCancels)
     EXPECT_EQ(book.bestBid(), 0);
     EXPECT_FALSE(book.hasOrder(1));
 }
+
+TEST_F(OrderBookTest, StressMatchAllOrders)
+{
+    const int N = 1000;
+    for(int i = 1; i <= N; ++i)
+        book.limit(Side::BUY, i, 1, 100);
+    for(int i = N+1; i <= 2 * N; ++i)
+        book.limit(Side::SELL, i, 1, 100);
+
+    EXPECT_EQ(book.bestBid(), 0);
+    EXPECT_EQ(book.bestAsk(), 0);
+}
+
+TEST_F(OrderBookTest, StressMultiplePriceLevels)
+{
+    for(int p = 95; p <= 100; ++p) {
+        for(int i = 0; i < 10; ++i) 
+            book.limit(Side::BUY, p * 100 + i, 1, p);
+    }
+
+    for(int p = 101; p <= 106; ++p) {
+        for(int i = 0; i < 10; ++i) 
+            book.limit(Side::SELL, p * 100 + i, 1, p);
+    }
+
+    EXPECT_EQ(book.bestBid(), 100);
+    EXPECT_EQ(book.bestAsk(), 101);
+}
+
+TEST_F(OrderBookTest, StressCancelAll)
+{
+    const int N = 1000;
+    for(int i = 0; i <= N; ++i) 
+        book.limit(Side::BUY, i, 1, 100);
+
+    for(int i = 0; i <= N; ++i) 
+        book.cancel(i);
+
+
+    EXPECT_EQ(book.bestBid(), 0);
+    EXPECT_EQ(book.volumeAt(Side::BUY, 100), 0);
+}
