@@ -36,3 +36,11 @@ add_executable(client
     src/client/FixClient.cpp)
 
 target_link_libraries(client PRIVATE exchange_lib)
+
+add_executable(orderbook_tests
+            test/OrderBook/Test_OrderBook.cc
+)
+
+target_link_libraries(orderbook_tests PRIVATE exchange_lib
+GTest::gtest GTest::gtest_main)
+add_test(NAME OrderBookTests COMMAND orderbook_tests)
