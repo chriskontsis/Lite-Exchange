@@ -52,3 +52,12 @@ add_executable(spsc_tests
 target_link_libraries(spsc_tests PRIVATE exchange_lib
 GTest::gtest GTest::gtest_main)
 add_test(NAME SPSCTests COMMAND spsc_tests)
+
+
+add_executable(integration_tests
+    test/Integration/Test_MultiClient.cc
+    src/client/FixClient.cpp
+)
+target_link_libraries(integration_tests PRIVATE exchange_lib 
+GTest::gtest GTest::gtest_main)
+add_test(NAME IntegrationTests COMMAND integration_tests)
