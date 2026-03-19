@@ -2,10 +2,11 @@
 #define ORDER_STRUCTURES_HPP
 
 #include <cstdint>
-#include <memory>
+#include <functional>
 #include <list>
+#include <memory>
 
-
+namespace fix { struct FillReport; }
 namespace LOB
 {
 
@@ -22,6 +23,8 @@ namespace LOB
         SELL
     };
 
+    enum class FillType { FULL, PARTIAL };
+
 
     struct Order 
     {
@@ -30,6 +33,7 @@ namespace LOB
         Quantity quantity = 0;
         Side side;
         std::shared_ptr<Limit> parentLimit;
+        std::function<void(const fix::FillReport&)> onFill;
 
         Order(UID uid_, Price price_, Side side_, Quantity qty_ ) :
         uid(uid_), price(price_), quantity(qty_), side(side_) {}

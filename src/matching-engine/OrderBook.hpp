@@ -4,8 +4,10 @@
 
 #include <unordered_map>
 #include <memory>
+#include <functional>
 #include "OrderStructures.hpp"
 #include "LimitTree.hpp"
+#include "../fix/FillReport.hpp"
 
 namespace LOB
 {
@@ -21,12 +23,12 @@ namespace LOB
             LimitOrderBook() : asks(), bids(), UIDtoOrderMap() {}
 
             void clear();
-            void limitSell(UID orderUID, Quantity quantity, Price price);
-            void limitBuy(UID orderUID, Quantity quantity, Price price);
-            void limit(Side side, UID orderUID, Quantity quantity, Price price);
-            void market(Side side, UID orderUID, Quantity quantity);
-            void marketBuy(UID orderUID, Quantity quantity);
-            void marketSell(UID orderUID, Quantity quantity);
+            void limitSell(UID orderUID, Quantity quantity, Price price, const std::function<void(fix::FillReport)>& onFill = {});
+            void limitBuy(UID orderUID, Quantity quantity, Price price, const std::function<void(fix::FillReport)>& onFill = {});
+            void limit(Side side, UID orderUID, Quantity quantity, Price price, const std::function<void(fix::FillReport)>& onFill = {});
+            void market(Side side, UID orderUID, Quantity quantity, const std::function<void(fix::FillReport)>& onFill = {});
+            void marketBuy(UID orderUID, Quantity quantity, const std::function<void(fix::FillReport)>& onFill = {});
+            void marketSell(UID orderUID, Quantity quantity, const std::function<void(fix::FillReport)>& onFill = {});
             void reduce(UID orderUID, Quantity quantity);
             void cancel(UID orderUId);
             Price bestBid() const { return bids.best ? bids.best->priceAtLimit : 0; }

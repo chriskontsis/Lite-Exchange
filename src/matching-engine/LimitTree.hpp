@@ -2,25 +2,27 @@
 #define LIMIT_TREE_HPP
 
 #include <map>
-#include <unordered_map>
 #include <memory>
+#include <unordered_map>
+
 #include "OrderStructures.hpp"
+#include "../fix/FillReport.hpp"
 
 namespace LOB
 {
     using PriceLimitMap = std::map<Price, std::shared_ptr<Limit>>;
     using PriceLimitExists = std::unordered_map<Price, std::shared_ptr<Limit>>;
 
-    template<Side side>
-    inline bool canMatch ([[maybe_unused]] Price limitPrice, [[maybe_unused]] Price marketPrice) {return true;}
+    template <Side side>
+    inline bool canMatch([[maybe_unused]] Price limitPrice, [[maybe_unused]] Price marketPrice) { return true; }
 
-    template<>
-    inline bool canMatch<Side::BUY>(Price limitPrice, Price marketPrice) 
+    template <>
+    inline bool canMatch<Side::BUY>(Price limitPrice, Price marketPrice)
     {
         return marketPrice == 0 || limitPrice >= marketPrice;
     }
 
-    template<>
+    template <>
     inline bool canMatch<Side::SELL>(Price limitPrice, Price marketPrice)
     {
         return marketPrice == 0 || limitPrice <= marketPrice;
@@ -28,31 +30,28 @@ namespace LOB
 
     // herb sutter on passing shared ptr by & and const & agrees
     // "Use a const shared_ptr& as a parameter only if you’re not sure whether or not you’ll take a copy and share ownership"
-    template<Side side>
-    inline void setBest([[maybe_unused]] std::shared_ptr<Limit>& best, [[maybe_unused]] const std::shared_ptr<Limit>& limit) {}
+    template <Side side>
+    inline void setBest([[maybe_unused]] std::shared_ptr<Limit> &best, [[maybe_unused]] const std::shared_ptr<Limit> &limit) {}
 
-    template<>
-    inline void setBest<Side::BUY>(std::shared_ptr<Limit>& bestBuy, const std::shared_ptr<Limit>& limit)
+    template <>
+    inline void setBest<Side::BUY>(std::shared_ptr<Limit> &bestBuy, const std::shared_ptr<Limit> &limit)
     {
-        if(!bestBuy || (limit->priceAtLimit > bestBuy->priceAtLimit))
+        if (!bestBuy || (limit->priceAtLimit > bestBuy->priceAtLimit))
             bestBuy = limit;
     }
 
-
-    template<>
-    inline void setBest<Side::SELL>(std::shared_ptr<Limit>&  bestSell, const std::shared_ptr<Limit>& limit)
+    template <>
+    inline void setBest<Side::SELL>(std::shared_ptr<Limit> &bestSell, const std::shared_ptr<Limit> &limit)
     {
-        if(!bestSell || (limit->priceAtLimit < bestSell->priceAtLimit))
+        if (!bestSell || (limit->priceAtLimit < bestSell->priceAtLimit))
             bestSell = limit;
     }
 
+    template <Side side>
+    inline void findBest([[maybe_unused]] std::shared_ptr<Limit> &best, [[maybe_unused]] PriceLimitMap &limits) {}
 
-
-    template<Side side>
-    inline void findBest([[maybe_unused]]  std::shared_ptr<Limit>& best, [[maybe_unused]] PriceLimitMap& limits) {}
-
-    template<>
-    inline void findBest<Side::BUY>( std::shared_ptr<Limit>& best, PriceLimitMap& limits)
+    template <>
+    inline void findBest<Side::BUY>(std::shared_ptr<Limit> &best, PriceLimitMap &limits)
     {
         if (limits.size() == 1) // one price left at limit (we are removing the last)
         {
@@ -65,8 +64,8 @@ namespace LOB
         best = nextBestIt->second;
     }
 
-    template<>
-    inline void findBest<Side::SELL>(std::shared_ptr<Limit>& best,  PriceLimitMap& limits)
+    template <>
+    inline void findBest<Side::SELL>(std::shared_ptr<Limit> &best, PriceLimitMap &limits)
     {
         if (limits.size() == 1) // one price left at limit (we are removing the last)
         {
@@ -79,10 +78,7 @@ namespace LOB
         best = nextBestIt->second;
     }
 
-
-
-
-    template<Side side>
+    template <Side side>
     struct LimitTree
     {
         PriceLimitMap limits;
@@ -91,7 +87,6 @@ namespace LOB
         Price lastBestPrice = 0;
         Count ordersInTree = 0;
         Volume volumeOfTree = 0;
-
 
         void clear()
         {
@@ -102,9 +97,9 @@ namespace LOB
             best.reset();
         }
 
-        void limit(const std::shared_ptr<Order>& order)
+        void limit(const std::shared_ptr<Order> &order)
         {
-            if(!existingLimits.contains(order->price))
+            if (!existingLimits.contains(order->price))
             {
                 order->parentLimit = std::make_shared<Limit>(order.get());
                 setBest<side>(best, order->parentLimit);
@@ -113,7 +108,7 @@ namespace LOB
                 order->parentLimit->orderList.emplace_back(order);
                 order->parentLimit->orderPositions.emplace(order->uid, std::prev(order->parentLimit->orderList.end()));
             }
-            else 
+            else
             {
                 order->parentLimit = existingLimits.at(order->price);
                 ++order->parentLimit->ordersAtLimit;
@@ -121,25 +116,24 @@ namespace LOB
                 order->parentLimit->orderList.push_back(order);
                 order->parentLimit->orderPositions.emplace(order->uid, std::prev(order->parentLimit->orderList.end()));
             }
-
         }
 
-        void cancel(std::shared_ptr<Order>& order) 
+        void cancel(std::shared_ptr<Order> &order)
         {
-            auto& orderList = order->parentLimit->orderList;
-            auto& limit = order->parentLimit;
+            auto &orderList = order->parentLimit->orderList;
+            auto &limit = order->parentLimit;
             auto qty = order->quantity;
 
             bool isLastOrder = (std::next(orderList.begin()) == orderList.end());
-            if(isLastOrder)
+            if (isLastOrder)
             {
-                if(best == limit)
+                if (best == limit)
                     findBest<side>(best, limits);
                 limits.erase(order->price);
                 existingLimits.erase(order->price);
                 limit.reset();
             }
-            else 
+            else
             {
                 --limit->ordersAtLimit;
                 limit->volumeAtLimit -= order->quantity;
@@ -149,36 +143,46 @@ namespace LOB
             }
             --ordersInTree;
             volumeOfTree -= qty;
-            if(best != nullptr)
+            if (best != nullptr)
                 lastBestPrice = best->priceAtLimit;
         }
 
-        template<typename Functor>
-        void market(std::shared_ptr<Order>& order, Functor filledOrderWithUID) 
+        template <typename Functor>
+        void market(std::shared_ptr<Order> &order, Functor filledOrderWithUID)
         {
-            while(best != nullptr && canMatch<side>(best->priceAtLimit, order->price))
+            while (best != nullptr && canMatch<side>(best->priceAtLimit, order->price))
             {
-                auto& match = best->orderList.front();
+                auto &match = best->orderList.front();
                 UID matchUID = match->uid;
-                if(match->quantity >= order->quantity) 
+                Price execPrice = match->parentLimit->priceAtLimit;
+                Quantity filledQty = std::min(match->quantity, order->quantity);
+
+                if (match->quantity >= order->quantity)
                 {
-                    if(match->quantity == order->quantity) 
+                    if (match->quantity == order->quantity)
                     {
+                        if (match->onFill)
+                            match->onFill(fix::FillReport(order->uid, matchUID, filledQty, execPrice,
+                                                          (side == LOB::Side::BUY) ? LOB::Side::SELL : LOB::Side::BUY));
                         cancel(match);
-                        filledOrderWithUID(matchUID);
+                        filledOrderWithUID(matchUID, order->uid, filledQty, execPrice, FillType::FULL);
                     }
-                    else 
+                    else
                     {
                         match->quantity -= order->quantity;
                         match->parentLimit->volumeAtLimit -= order->quantity;
                         volumeOfTree -= order->quantity;
+                        filledOrderWithUID(matchUID, order->uid, filledQty, execPrice, FillType::PARTIAL);
                     }
                     order->quantity = 0;
                     return;
                 }
                 order->quantity -= match->quantity;
+                if (match->onFill)
+                    match->onFill(fix::FillReport(order->uid, matchUID, filledQty, execPrice,
+                                                  (side == LOB::Side::BUY) ? LOB::Side::SELL : LOB::Side::BUY));
                 cancel(match);
-                filledOrderWithUID(matchUID);
+                filledOrderWithUID(matchUID, order->uid, filledQty, execPrice, FillType::FULL);
             }
         }
 
@@ -195,9 +199,7 @@ namespace LOB
                 return limits.at(price)->ordersAtLimit;
             return 0;
         }
-
     };
 }
-
 
 #endif
