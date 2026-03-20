@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(Boost CONFIG REQUIRED)
 find_package(GTest REQUIRED)
+find_package(benchmark REQUIRED)
 
 add_library(exchange_lib
     src/matching-engine/OrderBook.cpp
@@ -61,3 +62,19 @@ add_executable(integration_tests
 target_link_libraries(integration_tests PRIVATE exchange_lib 
 GTest::gtest GTest::gtest_main)
 add_test(NAME IntegrationTests COMMAND integration_tests)
+
+# Benchmarks
+add_executable(bench_orderbook bench/BenchOrderBook.cc)
+target_link_libraries(bench_orderbook PRIVATE exchange_lib 
+benchmark::benchmark)
+
+add_executable(bench_queues bench/BenchQueues.cc)
+target_link_libraries(bench_queues PRIVATE exchange_lib
+benchmark::benchmark)
+
+add_executable(bench_endtoend
+    bench/BenchEndToEnd.cc
+    src/client/FixClient.cpp
+)
+target_link_libraries(bench_endtoend PRIVATE exchange_lib
+benchmark::benchmark)

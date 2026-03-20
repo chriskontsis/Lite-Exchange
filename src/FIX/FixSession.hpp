@@ -31,7 +31,7 @@ namespace fix
                 {
                     if (ec)
                     {
-                        std::cout << "Client disconnected\n";
+                        //std::cout << "Client disconnected\n";
                         registry_.removeSession(session_id_);
                         return;
                     }
@@ -43,7 +43,7 @@ namespace fix
                         auto req = FixMessage::parse(buf.substr(0, end));
                         if(req.type != MsgType::UNKNOWN)
                         {
-                            std::cout << "Routing order type= " << (int)req.type << " symbol= " << req.symbol << '\n';
+                            //std::cout << "Routing order type= " << (int)req.type << " symbol= " << req.symbol << '\n';
                             inputq_.tryPush(ipc::OrderEvent(req, session_id_));
                         }
                         buf.remove_prefix(end+1);
