@@ -2,11 +2,10 @@
 #define ORDER_STRUCTURES_HPP
 
 #include <cstdint>
-#include <functional>
 #include <list>
 #include <memory>
+#include <unordered_map>
 
-namespace fix { struct FillReport; }
 namespace LOB
 {
 
@@ -15,6 +14,7 @@ namespace LOB
     using Price = u_int64_t;
     using Count = u_int32_t;
     using Volume = u_int64_t;
+    using SessionId = u_int32_t;
 
     class Limit;
     enum class Side
@@ -28,15 +28,16 @@ namespace LOB
 
     struct Order 
     {
-        const UID uid = 0;
-        const Price price = 0;
-        Quantity quantity = 0;
+        const UID uid {0};
+        const Price price {0};
+        Quantity quantity {0};
         Side side;
         std::shared_ptr<Limit> parentLimit;
-        std::function<void(const fix::FillReport&)> onFill;
+        SessionId session_id {0};
 
-        Order(UID uid_, Price price_, Side side_, Quantity qty_ ) :
-        uid(uid_), price(price_), quantity(qty_), side(side_) {}
+        Order(UID uid_, Price price_, Side side_, Quantity qty_, SessionId sid = 0) :
+        uid(uid_), price(price_), quantity(qty_), side(side_), session_id {sid} 
+        { }
     };
 
 

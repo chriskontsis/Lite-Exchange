@@ -4,10 +4,10 @@
 
 #include <unordered_map>
 #include <memory>
-#include <functional>
 #include "OrderStructures.hpp"
 #include "LimitTree.hpp"
-#include "../fix/FillReport.hpp"
+#include "../ipc/FillEvent.hpp"
+#include "../ipc/MPSC_Queue.hpp"
 
 namespace LOB
 {
@@ -18,19 +18,28 @@ namespace LOB
             LimitTree<Side::SELL> asks;
             LimitTree<Side::BUY> bids;
             UIDOrderMap UIDtoOrderMap;
+            MPSC_Queue<ipc::FillEvent, 4096>* fillOut_ {nullptr};
+            char symbol_[8] = {};
+
+            void limitSell(UID orderUID, Quantity quantity, Price price, SessionId session_id);
+            void limitBuy(UID orderUID, Quantity quantity, Price price, SessionId session_id);
+            void marketBuy(UID orderUID, Quantity quantity, SessionId session_id);
+            void marketSell(UID orderUID, Quantity quantity, SessionId session_id);
 
         public:
-            LimitOrderBook() : asks(), bids(), UIDtoOrderMap() {}
+            LimitOrderBook() = default;
+            LimitOrderBook(MPSC_Queue<ipc::FillEvent, 4096>& fillOut, const char* symbol) 
+                : fillOut_(&fillOut) 
+            {
+                std::memcpy(symbol_, symbol, 8);
+            }
 
             void clear();
-            void limitSell(UID orderUID, Quantity quantity, Price price, const std::function<void(fix::FillReport)>& onFill = {});
-            void limitBuy(UID orderUID, Quantity quantity, Price price, const std::function<void(fix::FillReport)>& onFill = {});
-            void limit(Side side, UID orderUID, Quantity quantity, Price price, const std::function<void(fix::FillReport)>& onFill = {});
-            void market(Side side, UID orderUID, Quantity quantity, const std::function<void(fix::FillReport)>& onFill = {});
-            void marketBuy(UID orderUID, Quantity quantity, const std::function<void(fix::FillReport)>& onFill = {});
-            void marketSell(UID orderUID, Quantity quantity, const std::function<void(fix::FillReport)>& onFill = {});
+            void limit(Side side, UID orderUID, Quantity quantity, Price price, SessionId session_id = 0);
+            void market(Side side, UID orderUID, Quantity quantity, SessionId session_id = 0);
             void reduce(UID orderUID, Quantity quantity);
             void cancel(UID orderUId);
+
             Price bestBid() const { return bids.best ? bids.best->priceAtLimit : 0; }
             Price bestAsk() const { return asks.best ? asks.best->priceAtLimit : 0; }
             Quantity volumeAt(Side side, Price price) const {

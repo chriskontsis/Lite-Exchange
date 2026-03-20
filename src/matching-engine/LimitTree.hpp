@@ -6,7 +6,6 @@
 #include <unordered_map>
 
 #include "OrderStructures.hpp"
-#include "../fix/FillReport.hpp"
 
 namespace LOB
 {
@@ -161,9 +160,6 @@ namespace LOB
                 {
                     if (match->quantity == order->quantity)
                     {
-                        if (match->onFill)
-                            match->onFill(fix::FillReport(order->uid, matchUID, filledQty, execPrice,
-                                                          (side == LOB::Side::BUY) ? LOB::Side::SELL : LOB::Side::BUY));
                         cancel(match);
                         filledOrderWithUID(matchUID, order->uid, filledQty, execPrice, FillType::FULL);
                     }
@@ -178,9 +174,6 @@ namespace LOB
                     return;
                 }
                 order->quantity -= match->quantity;
-                if (match->onFill)
-                    match->onFill(fix::FillReport(order->uid, matchUID, filledQty, execPrice,
-                                                  (side == LOB::Side::BUY) ? LOB::Side::SELL : LOB::Side::BUY));
                 cancel(match);
                 filledOrderWithUID(matchUID, order->uid, filledQty, execPrice, FillType::FULL);
             }

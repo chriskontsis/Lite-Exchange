@@ -1,5 +1,7 @@
 #pragma once
+#include <cstring>
 #include <string>
+#include "../ipc/FillEvent.hpp"
 #include "../matching-engine/OrderStructures.hpp"
 
 namespace fix
@@ -33,6 +35,19 @@ namespace fix
                 +  field(11,uid)
                 +  field(55, symbol) + "\n";
         }
+
+        static std::string executionReport(const ipc::FillEvent& fe)
+        {
+            const char* side = (fe.side == LOB::Side::BUY) ? "54=1|" : "54=2|";
+            char sym[9] = {};
+            std::memcpy(sym, fe.symbol_, 8);
+            return std::string("35=8|") + side
+                    +  field(11, fe.aggressor_uid_)
+                    +  field(31, fe.exec_price_)
+                    +  field(32, fe.filled_qty_) 
+                    +  field(55, std::string_view(sym, std::strlen(sym))) + "\n";
+        }   
+
     private:
         template <typename T>
         static std::string field(int tag, T value)

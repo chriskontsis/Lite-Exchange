@@ -5,14 +5,10 @@
 #include <atomic>
 #include <memory>
 #include <cstring>
-#include "../utility/SPSC_Queue.hpp"
-#include "../fix/FixMessage.hpp"
+#include "../ipc/MPSC_Queue.hpp"
+#include "../ipc/OrderEvent.hpp"
+#include "../ipc/FillEvent.hpp"
 #include "../matching-engine/OrderBook.hpp"
-#ifdef __APPLE__
-#include <mach/thread_policy.h>
-#include <mach/thread_act.h>  
-#endif
-#include <pthread.h>
 
 namespace fix
 {
@@ -25,96 +21,60 @@ namespace fix
 
   class EngineDispatcher
   {
+  public:
+    EngineDispatcher(MPSC_Queue<ipc::OrderEvent, 4096>& input, MPSC_Queue<ipc::FillEvent, 4096>& output)
+    : input_(input), output_(output)
+    { 
+      match_thread_ = std::thread(&EngineDispatcher::matchingLoop, this);
+    }
+
+    ~EngineDispatcher()
+    {
+      running_.store(false, std::memory_order_relaxed);
+      match_thread_.join();
+    }
+
   private:
-    struct Engine
-    {
-      std::unique_ptr<SPSC_Queue<OrderRequest>> queue;
-      LOB::LimitOrderBook book;
-      std::thread thread;
-      std::atomic<bool> running{true};
+    MPSC_Queue<ipc::OrderEvent, 4096> &input_;
+    MPSC_Queue<ipc::FillEvent, 4096> &output_;
+    std::unordered_map<uint64_t, std::unique_ptr<LOB::LimitOrderBook>> books_;
+    std::thread match_thread_;
+    std::atomic<bool> running_{true};
 
-      Engine() : queue(std::make_unique<SPSC_Queue<OrderRequest>>(4096)) {}
-    };
-
-    static void matchingLoop(Engine *eng)
+    LOB::LimitOrderBook &getOrCreateBook(uint64_t key, const char *symbol)
     {
-      OrderRequest req;
-      while (eng->running.load(std::memory_order_relaxed))
+      auto it = books_.find(key);
+      if(it != books_.end())
+        return *it->second;
+      auto [it2, _] = 
+          books_.emplace(key, std::make_unique<LOB::LimitOrderBook>(output_, symbol));
+      return *it2->second;
+    }
+
+    void matchingLoop()
+    {
+      ipc::OrderEvent ev;
+      while(running_.load(std::memory_order_relaxed))
       {
-        if (eng->queue->tryConsume(req))
+        if(input_.tryConsume(ev))
         {
-          switch (req.type)
+          auto& book = getOrCreateBook(symbolToKey(ev.symbol_), ev.symbol_);
+          switch(ev.type_)
           {
-          case MsgType::NEW_LIMIT_ORDER:
-            eng->book.limit(req.side, req.uid, req.quantity, req.price);
-            break;
-          case MsgType::NEW_MARKET_ORDER:
-            eng->book.market(req.side, req.uid, req.quantity);
-            break;
-          case MsgType::CANCEL_ORDER:
-            eng->book.cancel(req.uid);
-            break;
-          default:
-            break;
+            case fix::MsgType::NEW_LIMIT_ORDER:
+              book.limit(ev.side_, ev.uid_, ev.quantity_, ev.price_, ev.session_id_);
+              break;
+            case fix::MsgType::NEW_MARKET_ORDER:
+              book.market(ev.side_, ev.uid_, ev.quantity_, ev.session_id_);
+              break;
+            case fix::MsgType::CANCEL_ORDER:
+              book.cancel(ev.uid_);
+              break;
+            default:
+              break;
           }
         }
       }
     }
-
-    static void pinToCore(std::thread &t, int core)
-    {
-        #ifdef __linux__
-              cpu_set_t cpuset;
-              CPU_ZERO(&cpuset);
-              CPU_SET(core, &cpuset);
-              pthread_setaffinity_np(t.native_handle(), sizeof(cpuset), &cpuset);
-        #elif defined(__APPLE__)
-              thread_affinity_policy_data_t policy = {core};
-              thread_policy_set(
-                  pthread_mach_thread_np(t.native_handle()),
-                  THREAD_AFFINITY_POLICY,
-                  reinterpret_cast<thread_policy_t>(&policy),
-                  THREAD_AFFINITY_POLICY_COUNT);
-
-        #endif
-    }
-
-    std::unordered_map<uint64_t, std::unique_ptr<Engine>>::iterator
-    createEngine(uint64_t key)
-    {
-      auto eng = std::make_unique<Engine>();
-      Engine *ptr = eng.get();
-
-      eng->thread = std::thread(matchingLoop, ptr);
-      pinToCore(eng->thread, nextCore_++);
-      auto [it, _] = engines.emplace(key, std::move(eng));
-      return it;
-    }
-
-    std::unordered_map<uint64_t, std::unique_ptr<Engine>> engines;
-    int nextCore_ = 0;
-
-  public:
-    ~EngineDispatcher()
-    {
-      for (auto &[symbol, eng] : engines)
-      {
-        eng->running.store(false, std::memory_order_relaxed);
-        eng->thread.join();
-      }
-    }
-
-    void route(const OrderRequest &req)
-    {
-      uint64_t key = symbolToKey(req.symbol);
-      auto it = engines.find(key);
-
-      if (it == engines.end())
-      {
-        it = createEngine(key);
-      }
-      it->second->queue->push(req);
-    }
   };
-
-}; // namespace fix
+}

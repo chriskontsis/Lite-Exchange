@@ -4,8 +4,11 @@
 #include <boost/asio.hpp>
 #include <memory>
 #include <iostream>
+#include <cstring>
 #include "FixMessage.hpp"
-#include "../engine/EngineDispatcher.hpp"
+#include "../ipc/MPSC_Queue.hpp"
+#include "../ipc/OrderEvent.hpp"
+#include "../gateway/SessionRegistry.hpp"
 
 namespace fix
 {
@@ -13,7 +16,9 @@ namespace fix
     {
     private:
         boost::asio::ip::tcp::socket socket_;
-        EngineDispatcher &dispatcher_;
+        MPSC_Queue<ipc::OrderEvent, 4096>& inputq_;
+        gateway::SessionRegistry& registry_;
+        LOB::SessionId session_id_ {0};
         static constexpr int BUFFER_SIZE = 1024;
         char data_[BUFFER_SIZE];
 
@@ -27,6 +32,7 @@ namespace fix
                     if (ec)
                     {
                         std::cout << "Client disconnected\n";
+                        registry_.removeSession(session_id_);
                         return;
                     }
                     std::string_view buf(data_, length);
@@ -38,7 +44,7 @@ namespace fix
                         if(req.type != MsgType::UNKNOWN)
                         {
                             std::cout << "Routing order type= " << (int)req.type << " symbol= " << req.symbol << '\n';
-                            dispatcher_.route(req);
+                            inputq_.tryPush(ipc::OrderEvent(req, session_id_));
                         }
                         buf.remove_prefix(end+1);
                     }
@@ -46,26 +52,34 @@ namespace fix
                 });
         }
 
-        void sendData(std::string_view data)
-        {
-            auto self = shared_from_this();
-            boost::asio::async_write(socket_, boost::asio::buffer(data.data(), data.size()),
-                                     [this, self](boost::system::error_code ec, std::size_t)
-                                     {
-                                         if (ec)
-                                         {
-                                             std::cout << "Send error\n";
-                                         }
-                                     });
-        }
-
     public:
-        FixSession(boost::asio::ip::tcp::socket socket, EngineDispatcher &dispatcher)
-            : socket_(std::move(socket)), dispatcher_(dispatcher) {}
+        FixSession(boost::asio::ip::tcp::socket socket, 
+                  MPSC_Queue<ipc::OrderEvent, 4096>& inputq, 
+                  gateway::SessionRegistry& registry)
+            : socket_(std::move(socket)), inputq_(inputq), registry_(registry) 
+            { }
 
         void start()
         {
+            session_id_ = registry_.registerSession(shared_from_this());
             doRead();
+        }
+
+        void sendData(std::string data)
+        {
+            auto buf = std::make_shared<std::string>(std::move(data));
+            auto self = shared_from_this();
+
+            boost::asio::post(socket_.get_executor(),
+                [this, self, buf]()
+                {
+                    boost::asio::async_write(socket_, boost::asio::buffer(*buf),
+                    [self, buf](boost::system::error_code ec, std::size_t)
+                    {
+                        if (ec) std::cout << "Send error\n";
+                    });
+                }
+            );
         }
     };
 

@@ -4,17 +4,22 @@
 #include <vector>
 #include "ServerBase.hpp"
 #include "../fix/FixSession.hpp"
+#include "../ipc/MPSC_Queue.hpp"
+#include "../ipc/OrderEvent.hpp"
+#include "../gateway/SessionRegistry.hpp"
 namespace fix
 {
     class FixServer : public ServerBase<FixServer>
     {
     public:
-        FixServer(boost::asio::io_context &io_context, short port, EngineDispatcher &dispatcher)
-            : ServerBase(io_context, port), dispatcher_(dispatcher) {}
+        FixServer(boost::asio::io_context &io_context, short port, 
+                  MPSC_Queue<ipc::OrderEvent, 4096>& inputq, gateway::SessionRegistry& registry)
+            : ServerBase(io_context, port), inputQ_(inputq), registry_(registry) 
+            { }
 
         void onNewConnection(boost::asio::ip::tcp::socket socket)
         {
-            auto session = std::make_shared<FixSession>(std::move(socket), dispatcher_);
+            auto session = std::make_shared<FixSession>(std::move(socket), inputQ_, registry_);
             sessions_.emplace_back(session);
             pruneSessions();
             session->start();
@@ -27,10 +32,12 @@ namespace fix
             [](const std::weak_ptr<FixSession> &s) 
             {
                 return s.expired();
-            }), sessions_.end());
+            }), 
+            sessions_.end());
         }
 
-        EngineDispatcher &dispatcher_;
+        MPSC_Queue<ipc::OrderEvent, 4096>& inputQ_;
+        gateway::SessionRegistry& registry_;
         std::vector<std::weak_ptr<FixSession>> sessions_;
     };
 } // namespace fix
