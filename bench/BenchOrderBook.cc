@@ -6,8 +6,20 @@ static void BM_LimitInsert(benchmark::State &state)
 {
     LOB::LimitOrderBook book;
     LOB::UID uid = 1;
+    int inserted = 0;
     for (auto _ : state)
+    {
+        if(inserted >= 60000)
+        {
+            state.PauseTiming();
+            book.clear();
+            uid = 1;
+            inserted = 0;
+            state.ResumeTiming();
+        }
         book.limit(LOB::Side::BUY, uid++, 1, 100);
+        ++inserted;
+    }
 }
 BENCHMARK(BM_LimitInsert);
 

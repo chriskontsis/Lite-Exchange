@@ -5,16 +5,18 @@
 #include <unordered_map>
 #include <memory>
 #include "OrderStructures.hpp"
+#include "OrderPool.hpp"
 #include "LimitTree.hpp"
 #include "../ipc/FillEvent.hpp"
 #include "../ipc/MPSC_Queue.hpp"
 
 namespace LOB
 {
-    using UIDOrderMap = std::unordered_map<UID, std::shared_ptr<Order>>;
+    using UIDOrderMap = std::unordered_map<UID, Order*>;
     class LimitOrderBook 
     {
         private:
+            OrderPool<65536> pool_;
             LimitTree<Side::SELL> asks;
             LimitTree<Side::BUY> bids;
             UIDOrderMap UIDtoOrderMap;

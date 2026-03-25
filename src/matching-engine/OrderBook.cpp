@@ -11,11 +11,13 @@ void LimitOrderBook::limit(Side side, UID orderUID, Quantity quantity, Price pri
 
 void LimitOrderBook::limitBuy(UID orderUID, Quantity quantity, Price price, SessionId session_id)
 {
-    UIDtoOrderMap.emplace(orderUID, std::make_shared<Order>(orderUID, price, Side::BUY, quantity, session_id));
+    Order* order = pool_.allocate();
+    new (order) Order(orderUID, price, Side::BUY, quantity, session_id);
+    UIDtoOrderMap.emplace(orderUID, order);
 
     if (asks.best != nullptr && price >= asks.best->priceAtLimit)
     {
-        asks.market(UIDtoOrderMap.at(orderUID), [&](UID matchUID, UID aggressorUID, Quantity qty, Price execPrice, FillType fillType)
+        asks.market(order, [&](UID matchUID, UID aggressorUID, Quantity qty, Price execPrice, FillType fillType)
         { 
             SessionId restingSessionId = 0;
             auto restIt = UIDtoOrderMap.find(matchUID);
@@ -23,7 +25,12 @@ void LimitOrderBook::limitBuy(UID orderUID, Quantity quantity, Price price, Sess
                 restingSessionId = restIt->second->session_id;
 
             if(fillType == FillType::FULL) 
+            {
+                Order* resting = UIDtoOrderMap.at(matchUID);
                 UIDtoOrderMap.erase(matchUID);
+                resting->~Order();
+                pool_.deallocate(resting);
+            }
 
             if(fillOut_) 
             {
@@ -35,22 +42,26 @@ void LimitOrderBook::limitBuy(UID orderUID, Quantity quantity, Price price, Sess
                 }
             }
         });
-        if (UIDtoOrderMap.at(orderUID)->quantity == 0)
+        if (order->quantity == 0)
         {
             UIDtoOrderMap.erase(orderUID);
+            order->~Order();
+            pool_.deallocate(order);
             return;
         }
     }
-    bids.limit(UIDtoOrderMap.at(orderUID));
+    bids.limit(order);
 }
 
 void LimitOrderBook::limitSell(UID orderUID, Quantity quantity, Price price, SessionId session_id)
 {
-    UIDtoOrderMap.emplace(orderUID, std::make_shared<Order>(orderUID, price, Side::SELL, quantity, session_id));
+    Order* order = pool_.allocate();
+    new (order) Order(orderUID, price, Side::SELL, quantity, session_id);
+    UIDtoOrderMap.emplace(orderUID, order);
 
     if (bids.best != nullptr && price <= bids.best->priceAtLimit)
     {
-        bids.market(UIDtoOrderMap.at(orderUID), [&](UID matchUID, UID aggressorUID, Quantity qty, Price execPrice, FillType fillType)
+        bids.market(order, [&](UID matchUID, UID aggressorUID, Quantity qty, Price execPrice, FillType fillType)
         { 
             SessionId restingSessionId = 0;
             auto restIt = UIDtoOrderMap.find(matchUID);
@@ -58,7 +69,12 @@ void LimitOrderBook::limitSell(UID orderUID, Quantity quantity, Price price, Ses
                 restingSessionId = restIt->second->session_id;
 
             if (fillType == FillType::FULL)
-                  UIDtoOrderMap.erase(matchUID);
+            {
+                Order* resting = UIDtoOrderMap.at(matchUID);
+                UIDtoOrderMap.erase(matchUID);
+                resting->~Order();
+                pool_.deallocate(resting);
+            }
             
             if (fillOut_) 
             {
@@ -70,13 +86,15 @@ void LimitOrderBook::limitSell(UID orderUID, Quantity quantity, Price price, Ses
                 }
             }
         });
-        if (UIDtoOrderMap.at(orderUID)->quantity == 0)
+        if (order->quantity == 0)
         {
             UIDtoOrderMap.erase(orderUID);
+            order->~Order();
+            pool_.deallocate(order);
             return;
         }
     }
-    asks.limit(UIDtoOrderMap.at(orderUID));
+    asks.limit(order);
 }
 
 void LimitOrderBook::market(Side side, UID orderUID, Quantity quantity, SessionId session_id)
@@ -89,7 +107,8 @@ void LimitOrderBook::market(Side side, UID orderUID, Quantity quantity, SessionI
 
 void LimitOrderBook::marketBuy(UID orderUID, Quantity quantity, SessionId session_id)
 {
-    auto order = std::make_shared<Order>(orderUID, 0, Side::BUY, quantity, session_id);
+    Order* order = pool_.allocate();
+    new (order) Order(orderUID, 0, Side::BUY, quantity, session_id);
 
     asks.market(order, [&](UID matchUID, UID aggressorUID, Quantity qty, Price execPrice, FillType fillType)
         {
@@ -99,7 +118,12 @@ void LimitOrderBook::marketBuy(UID orderUID, Quantity quantity, SessionId sessio
                 restingSessionId = restIt->second->session_id;
 
             if(fillType == FillType::FULL)
+            {
+                Order* resting = UIDtoOrderMap.at(matchUID);
                 UIDtoOrderMap.erase(matchUID);
+                resting->~Order();
+                pool_.deallocate(resting);
+            }
 
             if(fillOut_)
             {
@@ -111,11 +135,15 @@ void LimitOrderBook::marketBuy(UID orderUID, Quantity quantity, SessionId sessio
                 }            
             }
         });
+
+        order->~Order();
+        pool_.deallocate(order);
 }
 
 void LimitOrderBook::marketSell(UID orderUID, Quantity quantity, SessionId session_id)
 {
-    auto order = std::make_shared<Order>(orderUID, 0, Side::SELL, quantity, session_id);
+    Order* order = pool_.allocate();
+    new (order) Order(orderUID, 0, Side::SELL, quantity, session_id);
 
     bids.market(order, [&](UID matchUID, UID aggressorUID, Quantity qty, Price execPrice, FillType fillType)
         {
@@ -125,7 +153,12 @@ void LimitOrderBook::marketSell(UID orderUID, Quantity quantity, SessionId sessi
                 restingSessionId = restIt->second->session_id;
 
             if(fillType == FillType::FULL)
+            {
+                Order* resting = UIDtoOrderMap.at(matchUID);
                 UIDtoOrderMap.erase(matchUID);
+                resting->~Order();
+                pool_.deallocate(resting);
+            }
 
             if(fillOut_)
             {
@@ -137,14 +170,18 @@ void LimitOrderBook::marketSell(UID orderUID, Quantity quantity, SessionId sessi
                 }            
             }        
         });
+
+        order->~Order();
+        pool_.deallocate(order);
 }
 
 void LimitOrderBook::reduce(UID orderUID, Quantity quantity) {
     auto it = UIDtoOrderMap.find(orderUID);
     if(it == UIDtoOrderMap.end()) return;
 
-    auto& order = it->second;
-    if(quantity >= order->quantity) {
+    auto* order = it->second;
+    if(quantity >= order->quantity) 
+    {
         cancel(orderUID);
         return;
     }
@@ -162,18 +199,25 @@ void LimitOrderBook::cancel(UID orderUID) {
     auto it = UIDtoOrderMap.find(orderUID);
     if(it == UIDtoOrderMap.end()) return;
 
-    auto& order = it->second;
+    auto* order = it->second;
     if(order->side == Side::BUY) 
         bids.cancel(order);
     else 
         asks.cancel(order);
 
     UIDtoOrderMap.erase(it);
+    order->~Order();
+    pool_.deallocate(order);
 }
 void LimitOrderBook::clear() {
+    for(auto& [uid, order] : UIDtoOrderMap)
+    {
+        order->~Order();
+        pool_.deallocate(order);
+    }
+    UIDtoOrderMap.clear();
     asks.clear();
     bids.clear();
-    UIDtoOrderMap.clear();
 }
 
 

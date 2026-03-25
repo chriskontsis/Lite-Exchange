@@ -96,64 +96,70 @@ namespace LOB
             best.reset();
         }
 
-        void limit(const std::shared_ptr<Order> &order)
+        void limit(Order* order)
         {
-            if (!existingLimits.contains(order->price))
+            auto it = existingLimits.find(order->price);
+            std::shared_ptr<Limit> lim;
+
+            if (it == existingLimits.end())
             {
-                order->parentLimit = std::make_shared<Limit>(order.get());
-                setBest<side>(best, order->parentLimit);
-                limits.emplace(order->price, order->parentLimit);
-                existingLimits.emplace(order->price, order->parentLimit);
-                order->parentLimit->orderList.emplace_back(order);
-                order->parentLimit->orderPositions.emplace(order->uid, std::prev(order->parentLimit->orderList.end()));
+                lim = std::make_shared<Limit>(order->price);
+                setBest<side>(best, lim);
+                limits.emplace(order->price, lim);
+                existingLimits.emplace(order->price, lim);
             }
             else
             {
-                order->parentLimit = existingLimits.at(order->price);
-                ++order->parentLimit->ordersAtLimit;
-                order->parentLimit->volumeAtLimit += order->quantity;
-                order->parentLimit->orderList.push_back(order);
-                order->parentLimit->orderPositions.emplace(order->uid, std::prev(order->parentLimit->orderList.end()));
+                lim = it->second;
             }
+
+            order->parentLimit = lim;
+            lim->push_back(order);
+            ++ordersInTree;
+            volumeOfTree += order->quantity;
         }
 
-        void cancel(std::shared_ptr<Order> &order)
+        void cancel(Order* order)
         {
-            auto &orderList = order->parentLimit->orderList;
-            auto &limit = order->parentLimit;
+            auto& lim = order->parentLimit;
             auto qty = order->quantity;
 
-            bool isLastOrder = (std::next(orderList.begin()) == orderList.end());
-            if (isLastOrder)
+            // update head
+            if(order->il_prev_)
+                order->il_prev_->il_next_ = order->il_next_;
+            else 
+                lim->head_ = order->il_next_;
+            
+            // update tail
+            if(order->il_next_)
+                order->il_next_->il_prev_ = order->il_prev_;
+            else 
+                lim->tail_ = order->il_prev_;
+            
+            --lim->ordersAtLimit;
+            lim->volumeAtLimit -= qty;
+
+            if(lim->ordersAtLimit == 0) 
             {
-                if (best == limit)
-                    findBest<side>(best, limits);
+                if(best == lim) findBest<side>(best, limits);
                 limits.erase(order->price);
                 existingLimits.erase(order->price);
-                limit.reset();
             }
-            else
-            {
-                --limit->ordersAtLimit;
-                limit->volumeAtLimit -= order->quantity;
-                auto orderIt = limit->orderPositions[order->uid];
-                limit->orderPositions.erase(order->uid);
-                limit->orderList.erase(orderIt);
-            }
+
             --ordersInTree;
             volumeOfTree -= qty;
-            if (best != nullptr)
+            if(best != nullptr)
                 lastBestPrice = best->priceAtLimit;
         }
 
         template <typename Functor>
-        void market(std::shared_ptr<Order> &order, Functor filledOrderWithUID)
+        void market(Order* order, Functor filledOrderWithUID)
         {
             while (best != nullptr && canMatch<side>(best->priceAtLimit, order->price))
             {
-                auto &match = best->orderList.front();
+                Order* match = best->head_;
                 UID matchUID = match->uid;
-                Price execPrice = match->parentLimit->priceAtLimit;
+                Price execPrice = best->priceAtLimit;
                 Quantity filledQty = std::min(match->quantity, order->quantity);
 
                 if (match->quantity >= order->quantity)

@@ -2,19 +2,17 @@
 #define ORDER_STRUCTURES_HPP
 
 #include <cstdint>
-#include <list>
 #include <memory>
-#include <unordered_map>
 
 namespace LOB
 {
 
-    using UID = u_int64_t;
-    using Quantity = u_int32_t;
-    using Price = u_int64_t;
-    using Count = u_int32_t;
-    using Volume = u_int64_t;
-    using SessionId = u_int32_t;
+    using UID = uint64_t;
+    using Quantity = uint32_t;
+    using Price = uint64_t;
+    using Count = uint32_t;
+    using Volume = uint64_t;
+    using SessionId = uint32_t;
 
     class Limit;
     enum class Side
@@ -34,28 +32,34 @@ namespace LOB
         Side side;
         std::shared_ptr<Limit> parentLimit;
         SessionId session_id {0};
+        Order* il_prev_ { nullptr };
+        Order* il_next_ { nullptr };
 
         Order(UID uid_, Price price_, Side side_, Quantity qty_, SessionId sid = 0) :
         uid(uid_), price(price_), quantity(qty_), side(side_), session_id {sid} 
         { }
     };
 
-
-    using OrderPositionIterators = std::list<std::shared_ptr<Order>>::iterator;
-    using OrderPositionMap = std::unordered_map<UID, OrderPositionIterators>;
-
-
     struct Limit
     {
         Price priceAtLimit;
-        Volume volumeAtLimit;
-        Count ordersAtLimit;
-        std::list<std::shared_ptr<Order>> orderList;
-        OrderPositionMap orderPositions;
+        Volume volumeAtLimit { 0 };
+        Count ordersAtLimit { 0 };
+        Order* head_ { nullptr };
+        Order* tail_ { nullptr };
 
-        Limit(Order* order) : priceAtLimit(order->price), volumeAtLimit(order->quantity), ordersAtLimit(1)
-        {}
+        explicit Limit(Price p) : priceAtLimit(p) { }
 
+        void push_back(Order* order)
+        {
+            order->il_prev_ = tail_;
+            order->il_next_ = nullptr;
+            if(tail_) tail_->il_next_ = order;
+            else head_ = order;
+            tail_ = order;
+            ++ordersAtLimit;
+            volumeAtLimit += order->quantity;
+        }
     };
 
 
