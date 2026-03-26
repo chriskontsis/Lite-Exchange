@@ -1,18 +1,16 @@
 #ifndef LIMIT_ORDER_BOOK_HPP
 #define LIMIT_ORDER_BOOK_HPP
 
-
-#include <unordered_map>
 #include <memory>
 #include "OrderStructures.hpp"
 #include "OrderPool.hpp"
 #include "LimitTree.hpp"
 #include "../ipc/FillEvent.hpp"
 #include "../ipc/MPSC_Queue.hpp"
-
+#include "absl/container/flat_hash_map.h"
 namespace LOB
 {
-    using UIDOrderMap = std::unordered_map<UID, Order*>;
+    using UIDOrderMap = absl::flat_hash_map<UID, Order*>;
     class LimitOrderBook 
     {
         private:
