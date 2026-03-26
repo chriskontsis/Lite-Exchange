@@ -2,7 +2,6 @@
 #define ORDER_STRUCTURES_HPP
 
 #include <cstdint>
-#include <memory>
 
 namespace LOB
 {
@@ -26,12 +25,12 @@ namespace LOB
 
     struct Order 
     {
-        const UID uid {0};
-        const Price price {0};
-        Quantity quantity {0};
+        const UID uid { 0 };
+        const Price price { 0 };
+        Quantity quantity { 0 };
         Side side;
-        std::shared_ptr<Limit> parentLimit;
-        SessionId session_id {0};
+        Limit* parentLimit { nullptr };
+        SessionId session_id { 0 };
         Order* il_prev_ { nullptr };
         Order* il_next_ { nullptr };
 
@@ -42,12 +41,13 @@ namespace LOB
 
     struct Limit
     {
-        Price priceAtLimit;
+        Price priceAtLimit { 0 };
         Volume volumeAtLimit { 0 };
         Count ordersAtLimit { 0 };
         Order* head_ { nullptr };
         Order* tail_ { nullptr };
 
+        Limit() = default;
         explicit Limit(Price p) : priceAtLimit(p) { }
 
         void push_back(Order* order)

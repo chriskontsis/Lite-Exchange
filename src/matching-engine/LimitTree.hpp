@@ -1,16 +1,13 @@
 #ifndef LIMIT_TREE_HPP
 #define LIMIT_TREE_HPP
 
-#include <map>
-#include <memory>
-#include <unordered_map>
-
+#include <array>
 #include "OrderStructures.hpp"
 
 namespace LOB
 {
-    using PriceLimitMap = std::map<Price, std::shared_ptr<Limit>>;
-    using PriceLimitExists = std::unordered_map<Price, std::shared_ptr<Limit>>;
+    static constexpr Price kBase = 1;
+    static constexpr size_t kMaxLevels = 16384;
 
     template <Side side>
     inline bool canMatch([[maybe_unused]] Price limitPrice, [[maybe_unused]] Price marketPrice) { return true; }
@@ -27,129 +24,116 @@ namespace LOB
         return marketPrice == 0 || limitPrice <= marketPrice;
     }
 
-    // herb sutter on passing shared ptr by & and const & agrees
-    // "Use a const shared_ptr& as a parameter only if you’re not sure whether or not you’ll take a copy and share ownership"
     template <Side side>
-    inline void setBest([[maybe_unused]] std::shared_ptr<Limit> &best, [[maybe_unused]] const std::shared_ptr<Limit> &limit) {}
+    inline void setBest([[maybe_unused]] Limit*& best, [[maybe_unused]] Limit* lim)  {}
 
     template <>
-    inline void setBest<Side::BUY>(std::shared_ptr<Limit> &bestBuy, const std::shared_ptr<Limit> &limit)
+    inline void setBest<Side::BUY>(Limit*& best, Limit* lim)
     {
-        if (!bestBuy || (limit->priceAtLimit > bestBuy->priceAtLimit))
-            bestBuy = limit;
+        if (!best || lim->priceAtLimit > best->priceAtLimit)
+            best = lim;
     }
 
     template <>
-    inline void setBest<Side::SELL>(std::shared_ptr<Limit> &bestSell, const std::shared_ptr<Limit> &limit)
+    inline void setBest<Side::SELL>(Limit*& best, Limit* lim)
     {
-        if (!bestSell || (limit->priceAtLimit < bestSell->priceAtLimit))
-            bestSell = limit;
+        if (!best || lim->priceAtLimit < best->priceAtLimit)
+            best = lim;
     }
 
     template <Side side>
-    inline void findBest([[maybe_unused]] std::shared_ptr<Limit> &best, [[maybe_unused]] PriceLimitMap &limits) {}
+    inline void findBest([[maybe_unused]] Limit*& best, 
+                         [[maybe_unused]] std::array<Limit, kMaxLevels>& slots, 
+                         [[maybe_unused]] size_t exhausted_idx) 
+                        { }
 
     template <>
-    inline void findBest<Side::BUY>(std::shared_ptr<Limit> &best, PriceLimitMap &limits)
+    inline void findBest<Side::BUY>(Limit*& best,
+                std::array<Limit, kMaxLevels>& slots, size_t exhausted_idx)
     {
-        if (limits.size() == 1) // one price left at limit (we are removing the last)
+        for(size_t i = exhausted_idx; i-- > 0;)
         {
-            best.reset();
-            return;
+            if(slots[i].ordersAtLimit > 0) { best = &slots[i]; return; }
         }
-
-        // the next best buy limit is the one past the last one (last one is current) int the map because it is in sorted order
-        auto nextBestIt = std::next(limits.rbegin());
-        best = nextBestIt->second;
+        best = nullptr;
     }
 
     template <>
-    inline void findBest<Side::SELL>(std::shared_ptr<Limit> &best, PriceLimitMap &limits)
+    inline void findBest<Side::SELL>(Limit*& best,
+                std::array<Limit, kMaxLevels>& slots, size_t exhausted_idx)
     {
-        if (limits.size() == 1) // one price left at limit (we are removing the last)
+        for(size_t i = exhausted_idx+1; i < kMaxLevels; ++i)
         {
-            best.reset();
-            return;
+            if(slots[i].ordersAtLimit > 0) { best = &slots[i]; return; }
         }
-
-        // the next sell buy limit is the first one int the map because it is in sorted order
-        auto nextBestIt = std::next(limits.begin());
-        best = nextBestIt->second;
+        best = nullptr;
     }
 
     template <Side side>
     struct LimitTree
     {
-        PriceLimitMap limits;
-        PriceLimitExists existingLimits;
-        std::shared_ptr<Limit> best;
-        Price lastBestPrice = 0;
-        Count ordersInTree = 0;
-        Volume volumeOfTree = 0;
+        std::array<Limit, kMaxLevels> levels_ { };
+        Limit* best { nullptr };
+        Count ordersInTree { 0 };
+        Volume volumeOfTree { 0 };
 
         void clear()
         {
-            limits.clear();
-            existingLimits.clear();
-            volumeOfTree = 0;
+            for(auto& level : levels_)
+            {
+                level.head_ = nullptr;
+                level.tail_ = nullptr;
+                level.ordersAtLimit = 0;
+                level.volumeAtLimit = 0;
+            }
+            best = nullptr;
             ordersInTree = 0;
-            best.reset();
+            volumeOfTree = 0;
         }
 
         void limit(Order* order)
         {
-            auto it = existingLimits.find(order->price);
-            std::shared_ptr<Limit> lim;
+            size_t idx = priceToLevel(order->price);
+            Limit& lim = levels_[idx];
 
-            if (it == existingLimits.end())
+            if (lim.ordersAtLimit == 0)
             {
-                lim = std::make_shared<Limit>(order->price);
-                setBest<side>(best, lim);
-                limits.emplace(order->price, lim);
-                existingLimits.emplace(order->price, lim);
-            }
-            else
-            {
-                lim = it->second;
+                lim.priceAtLimit = order->price;
+                setBest<side>(best, &lim);
             }
 
-            order->parentLimit = lim;
-            lim->push_back(order);
+            order->parentLimit = &lim;
+            lim.push_back(order);
             ++ordersInTree;
             volumeOfTree += order->quantity;
         }
 
         void cancel(Order* order)
         {
-            auto& lim = order->parentLimit;
-            auto qty = order->quantity;
+            Limit* lim = order->parentLimit;
+            Quantity qty = order->quantity;
 
-            // update head
-            if(order->il_prev_)
+            if(order->il_prev_) 
                 order->il_prev_->il_next_ = order->il_next_;
             else 
                 lim->head_ = order->il_next_;
-            
-            // update tail
+
             if(order->il_next_)
                 order->il_next_->il_prev_ = order->il_prev_;
             else 
                 lim->tail_ = order->il_prev_;
-            
+
             --lim->ordersAtLimit;
             lim->volumeAtLimit -= qty;
 
-            if(lim->ordersAtLimit == 0) 
+            if(lim->ordersAtLimit == 0 && lim == best)
             {
-                if(best == lim) findBest<side>(best, limits);
-                limits.erase(order->price);
-                existingLimits.erase(order->price);
+                size_t idx = priceToLevel(lim->priceAtLimit);
+                findBest<side>(best, levels_, idx);
             }
 
             --ordersInTree;
             volumeOfTree -= qty;
-            if(best != nullptr)
-                lastBestPrice = best->priceAtLimit;
         }
 
         template <typename Functor>
@@ -187,17 +171,18 @@ namespace LOB
 
         inline Volume volumeAt(Price price) const
         {
-            auto it = limits.find(price);
-            if (it != limits.end())
-                return it->second->volumeAtLimit;
-            return 0;
+            size_t idx = priceToLevel(price);
+            if(idx >= kMaxLevels) return 0;
+            return levels_[idx].volumeAtLimit;
         }
-        inline Count countAt(Price price)
+        inline Count countAt(Price price) const 
         {
-            if (limits.count(price))
-                return limits.at(price)->ordersAtLimit;
-            return 0;
+            size_t idx = priceToLevel(price);
+            if(idx >= kMaxLevels) return 0;
+            return levels_[idx].ordersAtLimit;
         }
+
+        static size_t priceToLevel(Price p) { return static_cast<size_t>(p - kBase); }
     };
 }
 
