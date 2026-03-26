@@ -21,15 +21,17 @@ void LimitOrderBook::limitBuy(UID orderUID, Quantity quantity, Price price, Sess
         { 
             SessionId restingSessionId = 0;
             auto restIt = UIDtoOrderMap.find(matchUID);
-            if(restIt != UIDtoOrderMap.end())
-                restingSessionId = restIt->second->session_id;
 
-            if(fillType == FillType::FULL) 
+            if(restIt != UIDtoOrderMap.end()) 
             {
-                Order* resting = UIDtoOrderMap.at(matchUID);
-                UIDtoOrderMap.erase(matchUID);
-                resting->~Order();
-                pool_.deallocate(resting);
+                restingSessionId = restIt->second->session_id;
+                if(fillType == FillType::FULL) 
+                {
+                    Order* resting = restIt->second;
+                    UIDtoOrderMap.erase(restIt);
+                    resting->~Order();
+                    pool_.deallocate(resting);
+                }
             }
 
             if(fillOut_) 
@@ -65,15 +67,17 @@ void LimitOrderBook::limitSell(UID orderUID, Quantity quantity, Price price, Ses
         { 
             SessionId restingSessionId = 0;
             auto restIt = UIDtoOrderMap.find(matchUID);
-            if (restIt != UIDtoOrderMap.end())
-                restingSessionId = restIt->second->session_id;
-
-            if (fillType == FillType::FULL)
+            
+            if(restIt != UIDtoOrderMap.end()) 
             {
-                Order* resting = UIDtoOrderMap.at(matchUID);
-                UIDtoOrderMap.erase(matchUID);
-                resting->~Order();
-                pool_.deallocate(resting);
+                restingSessionId = restIt->second->session_id;
+                if(fillType == FillType::FULL) 
+                {
+                    Order* resting = restIt->second;
+                    UIDtoOrderMap.erase(restIt);
+                    resting->~Order();
+                    pool_.deallocate(resting);
+                }
             }
             
             if (fillOut_) 
@@ -114,15 +118,17 @@ void LimitOrderBook::marketBuy(UID orderUID, Quantity quantity, SessionId sessio
         {
             SessionId restingSessionId = 0;
             auto restIt = UIDtoOrderMap.find(matchUID);
-            if(restIt != UIDtoOrderMap.end())
-                restingSessionId = restIt->second->session_id;
-
-            if(fillType == FillType::FULL)
+            
+            if(restIt != UIDtoOrderMap.end()) 
             {
-                Order* resting = UIDtoOrderMap.at(matchUID);
-                UIDtoOrderMap.erase(matchUID);
-                resting->~Order();
-                pool_.deallocate(resting);
+                restingSessionId = restIt->second->session_id;
+                if(fillType == FillType::FULL) 
+                {
+                    Order* resting = restIt->second;
+                    UIDtoOrderMap.erase(restIt);
+                    resting->~Order();
+                    pool_.deallocate(resting);
+                }
             }
 
             if(fillOut_)
@@ -149,15 +155,17 @@ void LimitOrderBook::marketSell(UID orderUID, Quantity quantity, SessionId sessi
         {
             SessionId restingSessionId = 0;
             auto restIt = UIDtoOrderMap.find(matchUID);
-            if (restIt != UIDtoOrderMap.end())
-                restingSessionId = restIt->second->session_id;
-
-            if(fillType == FillType::FULL)
+            
+            if(restIt != UIDtoOrderMap.end()) 
             {
-                Order* resting = UIDtoOrderMap.at(matchUID);
-                UIDtoOrderMap.erase(matchUID);
-                resting->~Order();
-                pool_.deallocate(resting);
+                restingSessionId = restIt->second->session_id;
+                if(fillType == FillType::FULL) 
+                {
+                    Order* resting = restIt->second;
+                    UIDtoOrderMap.erase(restIt);
+                    resting->~Order();
+                    pool_.deallocate(resting);
+                }
             }
 
             if(fillOut_)
