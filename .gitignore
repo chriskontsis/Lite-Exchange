@@ -37,3 +37,5 @@
 .cache/
 build/
 CLAUDE.md
+
+compile_commands.json
