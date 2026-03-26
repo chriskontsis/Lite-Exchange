@@ -12,9 +12,10 @@
 
 namespace net {
 struct Event {
-  void *ctx;
-  bool readable;
-  bool writable;
+  int   fd;       // which socket fired
+  void* ctx;      // your pointer, returned as-is
+  bool  readable;
+  bool  writable;
 };
 
 struct EventLoop {
@@ -45,8 +46,8 @@ struct EventLoop {
     ::kevent(fd_, changes, n, nullptr, 0, nullptr);
 #else
     epoll_event ev{};
-    ev.data.ptr = ctx;
-    ev.events = (read ? EPOLLIN : 0) | (write ? EPOLLOUT : 0) | EPOLLET;
+    ev.data.fd = sock_fd;
+    ev.events  = (read ? EPOLLIN : 0) | (write ? EPOLLOUT : 0) | EPOLLET;
     ::epoll_ctl(fd_, EPOLL_CTL_ADD, sock_fd, &ev);
 #endif
   }
@@ -70,8 +71,8 @@ struct EventLoop {
     ::kevent(fd_, changes, n, nullptr, 0, nullptr);
 #else
     epoll_event ev{};
-    ev.data.ptr = ctx;
-    ev.events = (read ? EPOLLIN : 0) | (write ? EPOLLOUT : 0) | EPOLLET;
+    ev.data.fd = sock_fd;
+    ev.events  = (read ? EPOLLIN : 0) | (write ? EPOLLOUT : 0) | EPOLLET;
     ::epoll_ctl(fd_, EPOLL_CTL_MOD, sock_fd, &ev);
 #endif
   }
@@ -101,7 +102,8 @@ struct EventLoop {
 
     int n = ::kevent(fd_, nullptr, 0, kevents, max_events, tsp);
     for (int i = 0; i < n; ++i) {
-      out[i].ctx = kevents[i].udata;
+      out[i].fd       = static_cast<int>(kevents[i].ident);
+      out[i].ctx      = kevents[i].udata;
       out[i].readable = (kevents[i].filter == EVFILT_READ);
       out[i].writable = (kevents[i].filter == EVFILT_WRITE);
     }
@@ -111,8 +113,9 @@ struct EventLoop {
     epoll_event epevents[64];
     int n = ::epoll_wait(fd_, epevents, max_events, timeout_ms);
     for (int i = 0; i < n; ++i) {
-      out[i].ctx = epevents[i].data.ptr;
-      out[i].readable = (epevents[i].events & EPOLLIN) != 0;
+      out[i].fd       = epevents[i].data.fd;
+      out[i].ctx      = nullptr; // epoll: ctx looked up separately if needed
+      out[i].readable = (epevents[i].events & EPOLLIN)  != 0;
       out[i].writable = (epevents[i].events & EPOLLOUT) != 0;
     }
     return n < 0 ? 0 : n;
