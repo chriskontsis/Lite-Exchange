@@ -46,6 +46,8 @@ namespace LOB
         Count ordersAtLimit { 0 };
         Order* head_ { nullptr };
         Order* tail_ { nullptr };
+        Limit* occ_prev_ { nullptr };
+        Limit* occ_next_ { nullptr };
 
         Limit() = default;
         explicit Limit(Price p) : priceAtLimit(p) { }
