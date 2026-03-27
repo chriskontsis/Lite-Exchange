@@ -12,7 +12,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Boost CONFIG REQUIRED)
 find_package(GTest REQUIRED)
 find_package(benchmark REQUIRED)
 find_package(absl REQUIRED)
@@ -22,7 +21,7 @@ add_library(exchange_lib
 )
 
 target_include_directories(exchange_lib PUBLIC src)
-target_link_libraries(exchange_lib PUBLIC Boost::headers absl::flat_hash_map)
+target_link_libraries(exchange_lib PUBLIC absl::flat_hash_map)
 
 add_executable(exchange
     src/server/serverMain.cpp

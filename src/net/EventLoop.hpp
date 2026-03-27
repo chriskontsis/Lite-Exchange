@@ -49,7 +49,7 @@ struct EventLoop
 
   void add(int sock_fd, void* ctx, Watch watch)
   {
-    bool read  = (static_cast<uint8_t>(watch) & 0b01) != 0;
+    bool read = (static_cast<uint8_t>(watch) & 0b01) != 0;
     bool write = (static_cast<uint8_t>(watch) & 0b10) != 0;
 #ifdef __APPLE__
     struct kevent changes[2];
@@ -69,7 +69,7 @@ struct EventLoop
 
   void mod(int sock_fd, void* ctx, Watch watch)
   {
-    bool read  = (static_cast<uint8_t>(watch) & 0b01) != 0;
+    bool read = (static_cast<uint8_t>(watch) & 0b01) != 0;
     bool write = (static_cast<uint8_t>(watch) & 0b10) != 0;
 #ifdef __APPLE__
     struct kevent changes[4];
