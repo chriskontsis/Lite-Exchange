@@ -1,6 +1,4 @@
-#ifndef FIX_SESSION_HPP
-#define FIX_SESSION_HPP
-
+#pragma once
 #include <unistd.h>
 
 #include <atomic>
@@ -13,16 +11,21 @@
 #include "../gateway/SessionRegistry.hpp"
 #include "../ipc/MPSC_Queue.hpp"
 #include "../ipc/OrderEvent.hpp"
+#include "../net/EventLoop.hpp"
+#include "../net/IoHandler.hpp"
 #include "FixMessage.hpp"
 #include "matching-engine/OrderStructures.hpp"
 
 namespace fix
 {
-class FixSession
+using net::Watch;
+
+class FixSession : public net::IoHandler
 {
  public:
-  FixSession(int fd, MPSC_Queue<ipc::OrderEvent, 4096>& inputq, gateway::SessionRegistry& registry)
-      : fd_(fd), inputq_(inputq), registry_(registry)
+  FixSession(int fd, net::EventLoop& loop, MPSC_Queue<ipc::OrderEvent, 4096>& inputq,
+             gateway::SessionRegistry& registry)
+      : fd_(fd), loop_(loop), input_q_(inputq), registry_(registry)
   {
   }
 
@@ -78,7 +81,9 @@ class FixSession
       std::lock_guard<std::mutex> lock(pending_mu_);
       pending_write_ += remainder;
     }
+
     write_pending_.store(true, std::memory_order_release);
+    loop_.mod(fd_, this, Watch::ReadWrite);
   }
 
   void flushPending()
@@ -96,10 +101,20 @@ class FixSession
       write_pending_.store(false, std::memory_order_release);
   }
 
+  void onReadable() override { doRead(); }
+
+  void onWritable() override
+  {
+    flushPending();
+    if (!hasPendingWrite())
+      loop_.mod(fd_, this, Watch::Read);
+  }
+
   int fd() const { return fd_; }
   LOB::SessionId sessionId() const { return session_id_; }
   bool isDisconnected() const { return disconnected_; }
   bool hasPendingWrite() const { return write_pending_.load(std::memory_order_acquire); }
+  bool wantsClose() const override { return disconnected_; }
 
  private:
   void processMessages()
@@ -125,11 +140,12 @@ class FixSession
   {
     auto req = FixMessage::parse(msg);
     if (req.type != MsgType::UNKNOWN)
-      inputq_.tryPush(ipc::OrderEvent(req, session_id_));
+      input_q_.tryPush(ipc::OrderEvent(req, session_id_));
   }
 
   int                                fd_;
-  MPSC_Queue<ipc::OrderEvent, 4096>& inputq_;
+  net::EventLoop&                    loop_;
+  MPSC_Queue<ipc::OrderEvent, 4096>& input_q_;
   gateway::SessionRegistry&          registry_;
   LOB::SessionId                     session_id_{0};
 
@@ -144,5 +160,3 @@ class FixSession
 };
 
 }  // namespace fix
-
-#endif

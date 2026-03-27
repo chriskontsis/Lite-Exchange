@@ -33,7 +33,7 @@ class FixMessageBuilder
 
   static std::string executionReport(const ipc::FillEvent& fe)
   {
-    const char* side = (fe.side == LOB::Side::BUY) ? "54=1|" : "54=2|";
+    const char* side = (fe.side_ == LOB::Side::BUY) ? "54=1|" : "54=2|";
     char        sym[9] = {};
     std::memcpy(sym, fe.symbol_, 8);
     return std::string("35=8|") + side + field(11, fe.aggressor_uid_) + field(31, fe.exec_price_) +

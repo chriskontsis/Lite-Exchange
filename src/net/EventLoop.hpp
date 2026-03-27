@@ -1,27 +1,40 @@
 #pragma once
 
 #ifdef __APPLE__
-#include <sys/event.h>
-#include <sys/time.h>
+  #include <sys/event.h>
+  #include <sys/time.h>
 #else
-#include <sys/epoll.h>
+  #include <sys/epoll.h>
 #endif
 
-#include <stdexcept>
 #include <unistd.h>
 
-namespace net {
-struct Event {
-  int   fd;       // which socket fired
-  void* ctx;      // your pointer, returned as-is
+#include <cstdint>
+#include <stdexcept>
+
+namespace net
+{
+
+enum class Watch : uint8_t
+{
+  Read = 0b01,
+  Write = 0b10,
+  ReadWrite = 0b11,
+};
+struct Event
+{
+  int   fd;   // which socket fired
+  void* ctx;  // your pointer, returned as-is
   bool  readable;
   bool  writable;
 };
 
-struct EventLoop {
+struct EventLoop
+{
   int fd_;
 
-  EventLoop() {
+  EventLoop()
+  {
 #ifdef __APPLE__
     fd_ = ::kqueue();
 #else
@@ -34,28 +47,33 @@ struct EventLoop {
 
   ~EventLoop() { ::close(fd_); }
 
-  void add(int sock_fd, void *ctx, bool read, bool write) {
+  void add(int sock_fd, void* ctx, Watch watch)
+  {
+    bool read  = (static_cast<uint8_t>(watch) & 0b01) != 0;
+    bool write = (static_cast<uint8_t>(watch) & 0b10) != 0;
 #ifdef __APPLE__
     struct kevent changes[2];
-    int n = 0;
+    int           n = 0;
     if (read)
       EV_SET(&changes[n++], sock_fd, EVFILT_READ, EV_ADD | EV_CLEAR, 0, 0, ctx);
     if (write)
-      EV_SET(&changes[n++], sock_fd, EVFILT_WRITE, EV_ADD | EV_CLEAR, 0, 0,
-             ctx);
+      EV_SET(&changes[n++], sock_fd, EVFILT_WRITE, EV_ADD | EV_CLEAR, 0, 0, ctx);
     ::kevent(fd_, changes, n, nullptr, 0, nullptr);
 #else
     epoll_event ev{};
     ev.data.fd = sock_fd;
-    ev.events  = (read ? EPOLLIN : 0) | (write ? EPOLLOUT : 0) | EPOLLET;
+    ev.events = (read ? EPOLLIN : 0) | (write ? EPOLLOUT : 0) | EPOLLET;
     ::epoll_ctl(fd_, EPOLL_CTL_ADD, sock_fd, &ev);
 #endif
   }
 
-  void mod(int sock_fd, void *ctx, bool read, bool write) {
+  void mod(int sock_fd, void* ctx, Watch watch)
+  {
+    bool read  = (static_cast<uint8_t>(watch) & 0b01) != 0;
+    bool write = (static_cast<uint8_t>(watch) & 0b10) != 0;
 #ifdef __APPLE__
     struct kevent changes[4];
-    int n = 0;
+    int           n = 0;
 
     if (read)
       EV_SET(&changes[n++], sock_fd, EVFILT_READ, EV_ADD | EV_CLEAR, 0, 0, ctx);
@@ -63,8 +81,7 @@ struct EventLoop {
       EV_SET(&changes[n++], sock_fd, EVFILT_READ, EV_DELETE, 0, 0, nullptr);
 
     if (write)
-      EV_SET(&changes[n++], sock_fd, EVFILT_WRITE, EV_ADD | EV_CLEAR, 0, 0,
-             ctx);
+      EV_SET(&changes[n++], sock_fd, EVFILT_WRITE, EV_ADD | EV_CLEAR, 0, 0, ctx);
     else
       EV_SET(&changes[n++], sock_fd, EVFILT_WRITE, EV_DELETE, 0, 0, nullptr);
 
@@ -72,15 +89,16 @@ struct EventLoop {
 #else
     epoll_event ev{};
     ev.data.fd = sock_fd;
-    ev.events  = (read ? EPOLLIN : 0) | (write ? EPOLLOUT : 0) | EPOLLET;
+    ev.events = (read ? EPOLLIN : 0) | (write ? EPOLLOUT : 0) | EPOLLET;
     ::epoll_ctl(fd_, EPOLL_CTL_MOD, sock_fd, &ev);
 #endif
   }
 
-  void remove(int sock_fd) {
+  void remove(int sock_fd)
+  {
 #ifdef __APPLE__
     struct kevent changes[2];
-    EV_SET(&changes[0], sock_fd, EVFILT_READ,  EV_DELETE, 0, 0, nullptr);
+    EV_SET(&changes[0], sock_fd, EVFILT_READ, EV_DELETE, 0, 0, nullptr);
     EV_SET(&changes[1], sock_fd, EVFILT_WRITE, EV_DELETE, 0, 0, nullptr);
     ::kevent(fd_, changes, 2, nullptr, 0, nullptr);
 #else
@@ -88,22 +106,25 @@ struct EventLoop {
 #endif
   }
 
-  int wait(Event *out, int max_events, int timeout_ms = -1) {
+  int wait(Event* out, int max_events, int timeout_ms = -1)
+  {
 #ifdef __APPLE__
-    struct kevent kevents[64];
-    struct timespec ts{};
-    struct timespec *tsp{nullptr};
+    struct kevent    kevents[64];
+    struct timespec  ts{};
+    struct timespec* tsp{nullptr};
 
-    if (timeout_ms >= 0) {
+    if (timeout_ms >= 0)
+    {
       ts.tv_sec = timeout_ms / 1000;
       ts.tv_nsec = (timeout_ms % 1000) * 1'000'000;
       tsp = &ts;
     }
 
     int n = ::kevent(fd_, nullptr, 0, kevents, max_events, tsp);
-    for (int i = 0; i < n; ++i) {
-      out[i].fd       = static_cast<int>(kevents[i].ident);
-      out[i].ctx      = kevents[i].udata;
+    for (int i = 0; i < n; ++i)
+    {
+      out[i].fd = static_cast<int>(kevents[i].ident);
+      out[i].ctx = kevents[i].udata;
       out[i].readable = (kevents[i].filter == EVFILT_READ);
       out[i].writable = (kevents[i].filter == EVFILT_WRITE);
     }
@@ -111,11 +132,12 @@ struct EventLoop {
     return n < 0 ? 0 : n;
 #else
     epoll_event epevents[64];
-    int n = ::epoll_wait(fd_, epevents, max_events, timeout_ms);
-    for (int i = 0; i < n; ++i) {
-      out[i].fd       = epevents[i].data.fd;
-      out[i].ctx      = nullptr; // epoll: ctx looked up separately if needed
-      out[i].readable = (epevents[i].events & EPOLLIN)  != 0;
+    int         n = ::epoll_wait(fd_, epevents, max_events, timeout_ms);
+    for (int i = 0; i < n; ++i)
+    {
+      out[i].fd = epevents[i].data.fd;
+      out[i].ctx = nullptr;  // epoll: ctx looked up separately if needed
+      out[i].readable = (epevents[i].events & EPOLLIN) != 0;
       out[i].writable = (epevents[i].events & EPOLLOUT) != 0;
     }
     return n < 0 ? 0 : n;
@@ -123,4 +145,4 @@ struct EventLoop {
   }
 };
 
-} // namespace net
+}  // namespace net

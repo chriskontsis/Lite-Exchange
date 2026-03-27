@@ -1,43 +1,46 @@
 #pragma once
 
 #include <memory>
-#include <vector>
-#include "ServerBase.hpp"
+#include <unordered_map>
+
 #include "../fix/FixSession.hpp"
+#include "../gateway/SessionRegistry.hpp"
 #include "../ipc/MPSC_Queue.hpp"
 #include "../ipc/OrderEvent.hpp"
-#include "../gateway/SessionRegistry.hpp"
+#include "ServerBase.hpp"
+#include "net/EventLoop.hpp"
 namespace fix
 {
-    class FixServer : public ServerBase<FixServer>
-    {
-    public:
-        FixServer(boost::asio::io_context &io_context, short port, 
-                  MPSC_Queue<ipc::OrderEvent, 4096>& inputq, gateway::SessionRegistry& registry)
-            : ServerBase(io_context, port), inputQ_(inputq), registry_(registry) 
-            { }
+class FixServer : public ServerBase<FixServer>
+{
+ public:
+  FixServer(net::EventLoop& loop, short port, MPSC_Queue<ipc::OrderEvent, 4096>& inputq,
+            gateway::SessionRegistry& registry)
+      : ServerBase(loop, port), input_q_(inputq), registry_(registry)
+  {
+  }
 
-        void onNewConnection(boost::asio::ip::tcp::socket socket)
-        {
-            auto session = std::make_shared<FixSession>(std::move(socket), inputQ_, registry_);
-            sessions_.emplace_back(session);
-            pruneSessions();
-            session->start();
-        }
+  void onNewConnection(int fd)
+  {
+    auto session = std::make_shared<FixSession>(fd, loop_, input_q_, registry_);
+    sessions_[fd] = session;
+    session->start();
+    loop_.add(fd, session.get(), net::Watch::Read);
+  }
 
-    private:
-        void pruneSessions()
-        {
-            sessions_.erase(std::remove_if(sessions_.begin(), sessions_.end(), 
-            [](const std::weak_ptr<FixSession> &s) 
-            {
-                return s.expired();
-            }), 
-            sessions_.end());
-        }
+  void closeSession(int fd)
+  {
+    auto it = sessions_.find(fd);
+    if (it == sessions_.end())
+      return;
+    registry_.removeSession((it->second->sessionId()));
+    loop_.remove(fd);
+    sessions_.erase(it);
+  }
 
-        MPSC_Queue<ipc::OrderEvent, 4096>& inputQ_;
-        gateway::SessionRegistry& registry_;
-        std::vector<std::weak_ptr<FixSession>> sessions_;
-    };
-} // namespace fix
+ private:
+  MPSC_Queue<ipc::OrderEvent, 4096>&                   input_q_;
+  gateway::SessionRegistry&                            registry_;
+  std::unordered_map<int, std::shared_ptr<FixSession>> sessions_;
+};
+}  // namespace fix

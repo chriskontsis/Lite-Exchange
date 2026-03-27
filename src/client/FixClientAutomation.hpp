@@ -2,21 +2,19 @@
 #define FIX_CLIENT_AUTOMATION
 
 #include <cstdint>
+#include <string>
 #include <thread>
 #include <vector>
-#include <string>
 
-
-class FixClientAutomation {
-    public:
-
-    private:
-        std::vector<std::thread> clients;
-        u_int8_t numClients = 0;
-        std::string ordersFile;
-        std::string compIdBase;
-        std::string targetCompId;
+class FixClientAutomation
+{
+public:
+private:
+  std::vector<std::thread> clients_;
+  uint8_t                  num_clients_ = 0;
+  std::string              orders_file_;
+  std::string              comp_id_base_;
+  std::string              target_comp_id_;
 };
-
 
 #endif

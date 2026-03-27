@@ -2,7 +2,6 @@
 #include <thread>
 #include <chrono>
 #include <atomic>
-#include <boost/asio.hpp>
 #include "../../src/server/FixServer.hpp"
 #include "../../src/engine/EngineDispatcher.hpp"
 #include "../../src/client/FixClient.hpp"
@@ -11,40 +10,50 @@
 #include "../../src/ipc/OrderEvent.hpp"
 #include "../../src/ipc/FillEvent.hpp"
 #include "../../src/gateway/SessionRegistry.hpp"
+#include "../../src/net/EventLoop.hpp"
+#include "../../src/net/IoHandler.hpp"
 
 class MultiClientTest : public ::testing::Test
 {
 protected:
     MPSC_Queue<ipc::OrderEvent, 4096> inputQ_;
-    MPSC_Queue<ipc::FillEvent, 4096> outputQ_;
-    gateway::SessionRegistry registry_;
-    fix::EngineDispatcher dispatcher_{inputQ_, outputQ_};
-    boost::asio::io_context io_context_;
-    boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work_guard_{boost::asio::make_work_guard(io_context_)};
-    fix::FixServer server_{io_context_, 12346, inputQ_, registry_};
-    std::thread server_thread_;
-    std::atomic<bool> drainRunning_{true};
-    std::thread drain_thread_;
+    MPSC_Queue<ipc::FillEvent, 4096>  outputQ_;
+    gateway::SessionRegistry          registry_;
+    fix::EngineDispatcher             dispatcher_{inputQ_, outputQ_};
+    net::EventLoop                    loop_;
+    fix::FixServer                    server_{loop_, 12346, inputQ_, registry_};
+    std::atomic<bool>                 serverRunning_{true};
+    std::thread                       server_thread_;
+    std::atomic<bool>                 drainRunning_{true};
+    std::thread                       drain_thread_;
 
     void SetUp() override
     {
-        server_thread_ = std::thread([this]()
-                                     { io_context_.run(); });
-        drain_thread_ = std::thread([this]()
-                                    {
-              ipc::FillEvent fe;
-              while (drainRunning_.load(std::memory_order_relaxed))
-                  outputQ_.tryConsume(fe); });
+        server_thread_ = std::thread([this]() {
+            net::Event events[64];
+            while (serverRunning_.load(std::memory_order_relaxed)) {
+                int n = loop_.wait(events, 64, /*timeout_ms=*/1);
+                for (int i = 0; i < n; ++i) {
+                    auto* handler = static_cast<net::IoHandler*>(events[i].ctx);
+                    if (events[i].readable) handler->onReadable();
+                    if (events[i].writable) handler->onWritable();
+                    if (handler->wantsClose()) server_.closeSession(events[i].fd);
+                }
+            }
+        });
+        drain_thread_ = std::thread([this]() {
+            ipc::FillEvent fe;
+            while (drainRunning_.load(std::memory_order_relaxed))
+                outputQ_.tryConsume(fe);
+        });
     }
 
     void TearDown() override
     {
+        serverRunning_.store(false, std::memory_order_relaxed);
         drainRunning_.store(false, std::memory_order_relaxed);
+        server_thread_.join();
         drain_thread_.join();
-        work_guard_.reset();
-        io_context_.stop();
-        if (server_thread_.joinable())
-            server_thread_.join();
     }
 };
 

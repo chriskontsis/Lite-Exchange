@@ -1,53 +1,54 @@
 #ifndef LIMIT_ORDER_BOOK_HPP
 #define LIMIT_ORDER_BOOK_HPP
 
-#include <memory>
-#include "OrderStructures.hpp"
-#include "OrderPool.hpp"
-#include "LimitTree.hpp"
 #include "../ipc/FillEvent.hpp"
 #include "../ipc/MPSC_Queue.hpp"
+#include "LimitTree.hpp"
+#include "OrderPool.hpp"
+#include "OrderStructures.hpp"
 #include "absl/container/flat_hash_map.h"
+
 namespace LOB
 {
-    using UIDOrderMap = absl::flat_hash_map<UID, Order*>;
-    class LimitOrderBook 
-    {
-        private:
-            OrderPool<65536> pool_;
-            LimitTree<Side::SELL> asks;
-            LimitTree<Side::BUY> bids;
-            UIDOrderMap UIDtoOrderMap;
-            MPSC_Queue<ipc::FillEvent, 4096>* fillOut_ {nullptr};
-            char symbol_[8] = {};
+using UIDOrderMap = absl::flat_hash_map<UID, Order*>;
 
-            void limitSell(UID orderUID, Quantity quantity, Price price, SessionId session_id);
-            void limitBuy(UID orderUID, Quantity quantity, Price price, SessionId session_id);
-            void marketBuy(UID orderUID, Quantity quantity, SessionId session_id);
-            void marketSell(UID orderUID, Quantity quantity, SessionId session_id);
+class LimitOrderBook
+{
+ private:
+  OrderPool<65536>                  pool_;
+  LimitTree<Side::SELL>             asks_;
+  LimitTree<Side::BUY>              bids_;
+  UIDOrderMap                       uid_to_order_map_;
+  MPSC_Queue<ipc::FillEvent, 4096>* fill_out_{nullptr};
+  char                              symbol_[8] = {};
 
-        public:
-            LimitOrderBook() = default;
-            LimitOrderBook(MPSC_Queue<ipc::FillEvent, 4096>& fillOut, const char* symbol) 
-                : fillOut_(&fillOut) 
-            {
-                std::memcpy(symbol_, symbol, 8);
-            }
+  void limitSell(UID order_uid, Quantity quantity, Price price, SessionId session_id);
+  void limitBuy(UID order_uid, Quantity quantity, Price price, SessionId session_id);
+  void marketBuy(UID order_uid, Quantity quantity, SessionId session_id);
+  void marketSell(UID order_uid, Quantity quantity, SessionId session_id);
 
-            void clear();
-            void limit(Side side, UID orderUID, Quantity quantity, Price price, SessionId session_id = 0);
-            void market(Side side, UID orderUID, Quantity quantity, SessionId session_id = 0);
-            void reduce(UID orderUID, Quantity quantity);
-            void cancel(UID orderUId);
+ public:
+  LimitOrderBook() = default;
+  LimitOrderBook(MPSC_Queue<ipc::FillEvent, 4096>& fill_out, const char* symbol)
+      : fill_out_(&fill_out)
+  {
+    std::memcpy(symbol_, symbol, 8);
+  }
 
-            Price bestBid() const { return bids.best ? bids.best->priceAtLimit : 0; }
-            Price bestAsk() const { return asks.best ? asks.best->priceAtLimit : 0; }
-            Quantity volumeAt(Side side, Price price) const {
-                return (side == Side::BUY) ? bids.volumeAt(price) : asks.volumeAt(price);
-            }
-            bool hasOrder(UID uid) const { return UIDtoOrderMap.contains(uid); } 
-    };
+  void clear();
+  void limit(Side side, UID order_uid, Quantity quantity, Price price, SessionId session_id = 0);
+  void market(Side side, UID order_uid, Quantity quantity, SessionId session_id = 0);
+  void reduce(UID order_uid, Quantity quantity);
+  void cancel(UID order_uid);
+
+  Price bestBid() const { return bids_.best_ ? bids_.best_->price_at_limit_ : 0; }
+  Price bestAsk() const { return asks_.best_ ? asks_.best_->price_at_limit_ : 0; }
+  Quantity volumeAt(Side side, Price price) const
+  {
+    return (side == Side::BUY) ? bids_.volumeAt(price) : asks_.volumeAt(price);
+  }
+  bool hasOrder(UID uid) const { return uid_to_order_map_.contains(uid); }
 };
-
+};  // namespace LOB
 
 #endif

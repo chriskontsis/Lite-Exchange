@@ -1,33 +1,41 @@
 #pragma once
 
-#include <boost/asio.hpp>
-#include <iostream>
+#include "../net/EventLoop.hpp"
+#include "../net/IoHandler.hpp"
+#include "../net/SocketUtils.hpp"
 
-namespace fix {
-    template<typename Derived> 
-    class ServerBase {
-        public:
-            ServerBase(boost::asio::io_context& io_context, short port)
-            : acceptor_(io_context, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port))
-            {
-                startAccept();
-            }
-        private:
-            void startAccept() 
-            {
-                acceptor_.async_accept([this]
-                    (boost::system::error_code ec, 
-                    boost::asio::ip::tcp::socket socket)
-                {
-                    if(!ec) 
-                    {
-                        std::cout << "New Connection\n";
-                        static_cast<Derived*>(this)->onNewConnection(std::move(socket));
-                    }
-                    startAccept();
-                });
-            }
+namespace fix
+{
+template <typename Derived>
+class ServerBase : public net::IoHandler
+{
+ public:
+  ServerBase(net::EventLoop& loop, uint16_t port)
+      : listen_fd_(net::makeListenSocket(port)), loop_(loop)
+  {
+    loop_.add(listen_fd_, this, net::Watch::Read);
+  }
+  ~ServerBase()
+  {
+    loop_.remove(listen_fd_);
+    net::closefd(listen_fd_);
+  }
 
-            boost::asio::ip::tcp::acceptor acceptor_;
-    };
-} // namespace fix
+  void onReadable() override
+  {
+    while (true)
+    {
+      int client_fd = net::acceptConn(listen_fd_);
+      if (client_fd < 0)
+        return;
+      net::setNonBlocking(client_fd);
+      net::setNoDelay(client_fd);
+      static_cast<Derived*>(this)->onNewConnection(client_fd);
+    }
+  }
+
+ protected:
+  int             listen_fd_;
+  net::EventLoop& loop_;
+};
+}  // namespace fix

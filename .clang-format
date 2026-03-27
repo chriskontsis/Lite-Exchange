@@ -10,10 +10,9 @@ ContinuationIndentWidth: 4
 IndentCaseLabels: true
 IndentPPDirectives: BeforeHash
 
-# Column limit — 100 is standard at most HFT shops
 ColumnLimit: 100
 
-# Brace style — Allman (braces on their own line), matches existing code
+# Brace style — Allman
 BreakBeforeBraces: Allman
 BraceWrapping:
   AfterClass: true
@@ -27,7 +26,7 @@ BraceWrapping:
   BeforeElse: true
   IndentBraces: false
 
-# Pointer/reference alignment — left: Order* ptr, not Order *ptr
+# Pointer/reference alignment
 PointerAlignment: Left
 ReferenceAlignment: Left
 

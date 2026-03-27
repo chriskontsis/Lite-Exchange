@@ -1,68 +1,65 @@
 #include <algorithm>
-#include <memory>
+#include <cassert>
 #include <vector>
 
-// queue empty: readPos == writePos
-// queue full: readPos == (writePos + 1) % qsize;
-template<typename T>
+// queue empty: read_pos_ == write_pos_
+// queue full:  read_pos_ == (write_pos_ + 1) % qsize
+template <typename T>
 class SPSC_Queue
 {
 public:
-    SPSC_Queue(int capacity) : ringBuffer(capacity + 1), writePos(0), readPos(0)
-    {
-        assert(capacity > 0);
-        assert(capacity + 1 > 0);
-    }
+  SPSC_Queue(int capacity) : ring_buffer_(capacity + 1), write_pos_(0), read_pos_(0)
+  {
+    assert(capacity > 0);
+    assert(capacity + 1 > 0);
+  }
 
-    // Queue full : readPos == increment(writePos);
-    bool tryPublish(const T& item)
-    {
-        const int w = writePos.load();
-        const int next_w = increment(w);
+  bool tryPublish(const T& item)
+  {
+    const int w = write_pos_.load();
+    const int next_w = increment(w);
 
-        if(readPos.load(std::memory_order_acquire) == next_w) 
-            return false;
-        
-        ringBuffer[w] = item;
-        writePos.store(next_w, std::memory_order_release);
-            
-        return true;
-    }
+    if (read_pos_.load(std::memory_order_acquire) == next_w)
+      return false;
 
-    void push(const T& val)
-    {
-        while(!tryPublish(val));
-    }
+    ring_buffer_[w] = item;
+    write_pos_.store(next_w, std::memory_order_release);
+    return true;
+  }
 
-    // Blocks until an item is available, then returns it.
-    T pop()
-    {
-        T out;
-        while(!tryConsume(out));
-        return out;
-    }
+  void push(const T& val)
+  {
+    while (!tryPublish(val))
+      ;
+  }
 
-    // Queue Empty : readPos == writePos
+  T pop()
+  {
+    T out;
+    while (!tryConsume(out))
+      ;
+    return out;
+  }
 
-    bool tryConsume(T& out)
-    {
-        const int w = writePos.load(std::memory_order_acquire);
-        const int r = readPos.load();
-        if(r == w)
-            return false;
+  bool tryConsume(T& out)
+  {
+    const int w = write_pos_.load(std::memory_order_acquire);
+    const int r = read_pos_.load();
+    if (r == w)
+      return false;
 
-        out = std::move(ringBuffer[r]);
-        readPos.store(increment(r), std::memory_order_release);
-        return true;
-    }
+    out = std::move(ring_buffer_[r]);
+    read_pos_.store(increment(r), std::memory_order_release);
+    return true;
+  }
 
 private:
-    inline int increment(int pos) const
-    {
-        return (pos + 1) % static_cast<int>(ringBuffer.size());
-    }
+  inline int increment(int pos) const
+  {
+    return (pos + 1) % static_cast<int>(ring_buffer_.size());
+  }
 
-    alignas(64) std::atomic<int> readPos;
-    alignas(64) std::atomic<int> writePos;
-    std::vector<T> ringBuffer;
+  alignas(64) std::atomic<int> read_pos_;
+  alignas(64) std::atomic<int> write_pos_;
+  std::vector<T>               ring_buffer_;
 };
