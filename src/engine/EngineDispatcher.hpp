@@ -1,10 +1,9 @@
 #pragma once
 
+#include <array>
 #include <atomic>
-#include <cstring>
 #include <memory>
 #include <thread>
-#include <unordered_map>
 
 #include "../ipc/FillEvent.hpp"
 #include "../ipc/MPSC_Queue.hpp"
@@ -13,13 +12,6 @@
 
 namespace fix
 {
-inline uint64_t symbolToKey(const char* sym)
-{
-  uint64_t key = 0;
-  std::memcpy(&key, sym, 8);
-  return key;
-}
-
 class EngineDispatcher
 {
  public:
@@ -37,19 +29,17 @@ class EngineDispatcher
   }
 
  private:
-  MPSC_Queue<ipc::OrderEvent, 65536>&                                input_;
-  MPSC_Queue<ipc::FillEvent, 65536>&                                 output_;
-  std::unordered_map<uint64_t, std::unique_ptr<LOB::LimitOrderBook>> books_;
-  std::thread                                                        match_thread_;
-  std::atomic<bool>                                                  running_{true};
+  MPSC_Queue<ipc::OrderEvent, 65536>&                     input_;
+  MPSC_Queue<ipc::FillEvent, 65536>&                      output_;
+  std::array<std::unique_ptr<LOB::LimitOrderBook>, 65536> books_;
+  std::thread                                             match_thread_;
+  std::atomic<bool>                                       running_{true};
 
-  LOB::LimitOrderBook& getOrCreateBook(uint64_t key, const char* symbol)
+  LOB::LimitOrderBook& getOrCreateBook(LOB::SymbolId id)
   {
-    auto it = books_.find(key);
-    if (it != books_.end())
-      return *it->second;
-    auto [it2, _] = books_.emplace(key, std::make_unique<LOB::LimitOrderBook>(output_, symbol));
-    return *it2->second;
+    if (!books_[id])
+      books_[id] = std::make_unique<LOB::LimitOrderBook>(output_, id);
+    return *books_[id];
   }
 
   void matchingLoop()
@@ -59,11 +49,12 @@ class EngineDispatcher
     {
       if (input_.tryConsume(ev))
       {
-        auto& book = getOrCreateBook(symbolToKey(ev.symbol_), ev.symbol_);
+        auto& book = getOrCreateBook(ev.symbol_id_);
         switch (ev.type_)
         {
           case fix::MsgType::NEW_LIMIT_ORDER:
-            book.limit(ev.side_, ev.uid_, ev.quantity_, ev.price_, ev.session_id_);
+            book.limit(ev.side_, ev.uid_, ev.quantity_, ev.price_, ev.session_id_,
+                       ev.time_in_force_);
             break;
           case fix::MsgType::NEW_MARKET_ORDER:
             book.market(ev.side_, ev.uid_, ev.quantity_, ev.session_id_);

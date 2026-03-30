@@ -15,28 +15,30 @@ using UIDOrderMap = absl::flat_hash_map<UID, Order*>;
 class LimitOrderBook
 {
  private:
-  OrderPool<65536>                  pool_;
-  LimitTree<Side::SELL>             asks_;
-  LimitTree<Side::BUY>              bids_;
-  UIDOrderMap                       uid_to_order_map_;
+  OrderPool<65536>                   pool_;
+  LimitTree<Side::SELL>              asks_;
+  LimitTree<Side::BUY>               bids_;
+  UIDOrderMap                        uid_to_order_map_;
   MPSC_Queue<ipc::FillEvent, 65536>* fill_out_{nullptr};
-  char                              symbol_[8] = {};
+  SymbolId                           symbol_id_{0};
 
-  void limitSell(UID order_uid, Quantity quantity, Price price, SessionId session_id);
-  void limitBuy(UID order_uid, Quantity quantity, Price price, SessionId session_id);
+  void limitSell(UID order_uid, Quantity quantity, Price price, SessionId session_id,
+                 TimeInForce tif = TimeInForce::GTC);
+  void limitBuy(UID order_uid, Quantity quantity, Price price, SessionId session_id,
+                TimeInForce tif = TimeInForce::GTC);
   void marketBuy(UID order_uid, Quantity quantity, SessionId session_id);
   void marketSell(UID order_uid, Quantity quantity, SessionId session_id);
 
  public:
   LimitOrderBook() = default;
-  LimitOrderBook(MPSC_Queue<ipc::FillEvent, 65536>& fill_out, const char* symbol)
-      : fill_out_(&fill_out)
+  LimitOrderBook(MPSC_Queue<ipc::FillEvent, 65536>& fill_out, SymbolId symbol_id)
+      : fill_out_(&fill_out), symbol_id_(symbol_id)
   {
-    std::memcpy(symbol_, symbol, 8);
   }
 
   void clear();
-  void limit(Side side, UID order_uid, Quantity quantity, Price price, SessionId session_id = 0);
+  void limit(Side side, UID order_uid, Quantity quantity, Price price, SessionId session_id = 0,
+             TimeInForce tif = TimeInForce::GTC);
   void market(Side side, UID order_uid, Quantity quantity, SessionId session_id = 0);
   void reduce(UID order_uid, Quantity quantity);
   void cancel(UID order_uid);

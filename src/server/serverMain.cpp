@@ -17,11 +17,12 @@ int main()
   MPSC_Queue<ipc::OrderEvent, 65536> inputQ;
   MPSC_Queue<ipc::FillEvent, 65536>  outputQ;
   gateway::SessionRegistry           registry;
+  gateway::SymbolRegistry            symbols;
 
   fix::EngineDispatcher dispatcher(inputQ, outputQ);
 
   net::EventLoop loop;
-  fix::FixServer server(loop, 12345, inputQ, registry);
+  fix::FixServer server(loop, 12345, inputQ, registry, symbols);
 
   std::atomic<bool> running{true};
   std::thread       drainThread(
@@ -33,7 +34,8 @@ int main()
           if (outputQ.tryConsume(fe))
           {
             if (auto* session = registry.lookup(fe.session_id_))
-              session->sendData(fix::FixMessageBuilder::executionReport(fe));
+              session->sendData(
+                  fix::FixMessageBuilder::executionReport(fe, symbols.name(fe.symbol_id_)));
           }
         }
       });

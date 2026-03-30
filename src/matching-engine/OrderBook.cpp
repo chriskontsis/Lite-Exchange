@@ -1,16 +1,18 @@
 #include "OrderBook.hpp"
+
 using namespace LOB;
 
 void LimitOrderBook::limit(Side side, UID order_uid, Quantity quantity, Price price,
-                           SessionId session_id)
+                           SessionId session_id, TimeInForce tif)
 {
   if (side == Side::BUY)
-    return limitBuy(order_uid, quantity, price, session_id);
+    return limitBuy(order_uid, quantity, price, session_id, tif);
   else
-    return limitSell(order_uid, quantity, price, session_id);
+    return limitSell(order_uid, quantity, price, session_id, tif);
 }
 
-void LimitOrderBook::limitBuy(UID order_uid, Quantity quantity, Price price, SessionId session_id)
+void LimitOrderBook::limitBuy(UID order_uid, Quantity quantity, Price price, SessionId session_id,
+                              TimeInForce tif)
 {
   Order* order = pool_.allocate();
   new (order) Order(order_uid, price, Side::BUY, quantity, session_id);
@@ -39,8 +41,8 @@ void LimitOrderBook::limitBuy(UID order_uid, Quantity quantity, Price price, Ses
 
           if (fill_out_)
           {
-            ipc::FillEvent fe(aggressor_uid, match_uid, qty, exec_price, Side::BUY, symbol_,
-                              session_id);
+            ipc::FillEvent fe(aggressor_uid, match_uid, qty, exec_price, Side::BUY, session_id,
+                              symbol_id_);
             fill_out_->tryPush(fe);
             if (resting_session_id != 0)
             {
@@ -57,10 +59,20 @@ void LimitOrderBook::limitBuy(UID order_uid, Quantity quantity, Price price, Ses
       return;
     }
   }
+
+  if (tif == TimeInForce::IOC)
+  {
+    uid_to_order_map_.erase(order_uid);
+    order->~Order();
+    pool_.deallocate(order);
+    return;
+  }
+
   bids_.limit(order);
 }
 
-void LimitOrderBook::limitSell(UID order_uid, Quantity quantity, Price price, SessionId session_id)
+void LimitOrderBook::limitSell(UID order_uid, Quantity quantity, Price price, SessionId session_id,
+                               TimeInForce tif)
 {
   Order* order = pool_.allocate();
   new (order) Order(order_uid, price, Side::SELL, quantity, session_id);
@@ -89,8 +101,8 @@ void LimitOrderBook::limitSell(UID order_uid, Quantity quantity, Price price, Se
 
           if (fill_out_)
           {
-            ipc::FillEvent fe(aggressor_uid, match_uid, qty, exec_price, Side::SELL, symbol_,
-                              session_id);
+            ipc::FillEvent fe(aggressor_uid, match_uid, qty, exec_price, Side::SELL, session_id,
+                              symbol_id_);
             fill_out_->tryPush(fe);
             if (resting_session_id != 0)
             {
@@ -107,6 +119,15 @@ void LimitOrderBook::limitSell(UID order_uid, Quantity quantity, Price price, Se
       return;
     }
   }
+
+  if (tif == TimeInForce::IOC)
+  {
+    uid_to_order_map_.erase(order_uid);
+    order->~Order();
+    pool_.deallocate(order);
+    return;
+  }
+
   asks_.limit(order);
 }
 
@@ -144,8 +165,8 @@ void LimitOrderBook::marketBuy(UID order_uid, Quantity quantity, SessionId sessi
 
         if (fill_out_)
         {
-          ipc::FillEvent fe(aggressor_uid, match_uid, qty, exec_price, Side::BUY, symbol_,
-                            session_id);
+          ipc::FillEvent fe(aggressor_uid, match_uid, qty, exec_price, Side::BUY, session_id,
+                            symbol_id_);
           fill_out_->tryPush(fe);
           if (resting_session_id != 0)
           {
@@ -185,8 +206,8 @@ void LimitOrderBook::marketSell(UID order_uid, Quantity quantity, SessionId sess
 
         if (fill_out_)
         {
-          ipc::FillEvent fe(aggressor_uid, match_uid, qty, exec_price, Side::SELL, symbol_,
-                            session_id);
+          ipc::FillEvent fe(aggressor_uid, match_uid, qty, exec_price, Side::SELL, session_id,
+                            symbol_id_);
           fill_out_->tryPush(fe);
           if (resting_session_id != 0)
           {

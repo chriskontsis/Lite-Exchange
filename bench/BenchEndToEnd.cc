@@ -8,14 +8,15 @@
 #include "../src/engine/EngineDispatcher.hpp"
 #include "../src/fix/FixMessageBuilder.hpp"
 #include "../src/gateway/SessionRegistry.hpp"
+#include "../src/gateway/SymbolRegistry.hpp"
 #include "../src/ipc/FillEvent.hpp"
 #include "../src/ipc/MPSC_Queue.hpp"
 #include "../src/ipc/OrderEvent.hpp"
 #include "../src/net/EventLoop.hpp"
 #include "../src/net/IoHandler.hpp"
+#include "../src/server/FixServer.hpp"
 #include "BookSeeder.hpp"
 #include "TrafficGenerator.hpp"
-#include "../src/server/FixServer.hpp"
 
 static constexpr short PORT = 12399;
 
@@ -23,17 +24,18 @@ struct ServerFixture
 {
   std::unique_ptr<MPSC_Queue<ipc::OrderEvent, 65536>> inputQ{
       new MPSC_Queue<ipc::OrderEvent, 65536>()};
-  std::unique_ptr<MPSC_Queue<ipc::FillEvent, 65536>>  outputQ{
+  std::unique_ptr<MPSC_Queue<ipc::FillEvent, 65536>> outputQ{
       new MPSC_Queue<ipc::FillEvent, 65536>()};
   gateway::SessionRegistry registry;
+  gateway::SymbolRegistry  symbols;
   fix::EngineDispatcher    dispatcher{*inputQ, *outputQ};
   net::EventLoop           loop;
-  fix::FixServer           server{loop, PORT, *inputQ, registry};
-  std::atomic<bool>                  server_running{true};
-  std::thread                        server_thread;
-  std::atomic<bool>                  drain_running{true};
-  std::atomic<uint64_t>              fills_received{0};
-  std::thread                        drain_thread;
+  fix::FixServer           server{loop, PORT, *inputQ, registry, symbols};
+  std::atomic<bool>        server_running{true};
+  std::thread              server_thread;
+  std::atomic<bool>        drain_running{true};
+  std::atomic<uint64_t>    fills_received{0};
+  std::thread              drain_thread;
 
   ServerFixture()
   {
@@ -66,7 +68,8 @@ struct ServerFixture
             {
               fills_received.fetch_add(1, std::memory_order_relaxed);
               if (auto* session = registry.lookup(fe.session_id_))
-                session->sendData(fix::FixMessageBuilder::executionReport(fe));
+                session->sendData(
+                    fix::FixMessageBuilder::executionReport(fe, symbols.name(fe.symbol_id_)));
             }
           }
         });
@@ -240,13 +243,13 @@ BENCHMARK(BM_EndToEnd_MatchedPairs_Latency)
 // Measures gateway + engine throughput under real-world order flow.
 static void BM_EndToEnd_CancelPressure(benchmark::State& state)
 {
-  ServerFixture srv;
+  ServerFixture  srv;
   fix::FixClient client("127.0.0.1", PORT);
 
   bench::TrafficConfig cfg;
-  cfg.symbol      = "AAPL";
-  cfg.mid_price   = 500;
-  cfg.spread      = 10;
+  cfg.symbol = "AAPL";
+  cfg.mid_price = 500;
+  cfg.spread = 10;
   cfg.cancel_rate = 0.65;
   bench::TrafficGenerator gen(cfg);
 
@@ -262,16 +265,16 @@ BENCHMARK(BM_EndToEnd_CancelPressure)->Iterations(10000);
 // cost under realistic book depth.
 static void BM_EndToEnd_DeepBookSweep(benchmark::State& state)
 {
-  ServerFixture    srv;
-  fix::FixClient   seeder("127.0.0.1", PORT, [](std::string_view){});
-  fix::FixClient   aggressor("127.0.0.1", PORT, [](std::string_view){});
+  ServerFixture  srv;
+  fix::FixClient seeder("127.0.0.1", PORT, [](std::string_view) {});
+  fix::FixClient aggressor("127.0.0.1", PORT, [](std::string_view) {});
 
   bench::SeedConfig scfg;
-  scfg.symbol_           = "GOOG";
-  scfg.mid_price_        = 500;
-  scfg.num_levels_       = 20;
+  scfg.symbol_ = "GOOG";
+  scfg.mid_price_ = 500;
+  scfg.num_levels_ = 20;
   scfg.orders_per_level_ = 10;
-  scfg.drain_wait_ms_    = 150;
+  scfg.drain_wait_ms_ = 150;
 
   LOB::UID uid = 2'000'000;
   for (auto _ : state)
@@ -282,8 +285,7 @@ static void BM_EndToEnd_DeepBookSweep(benchmark::State& state)
     srv.fills_received.store(0, std::memory_order_relaxed);
     state.ResumeTiming();
 
-    aggressor.send(
-        fix::FixMessageBuilder::market<LOB::Side::BUY>(uid++, 200, "GOOG"));
+    aggressor.send(fix::FixMessageBuilder::market<LOB::Side::BUY>(uid++, 200, "GOOG"));
 
     // 200 resting fills + 1 aggressor fill
     while (srv.fills_received.load(std::memory_order_relaxed) < 201)
@@ -302,15 +304,15 @@ static void BM_EndToEnd_SteadyState(benchmark::State& state)
   ServerFixture srv;
 
   bench::TrafficConfig mm_cfg;
-  mm_cfg.symbol      = "MSFT";
-  mm_cfg.mid_price   = 500;
-  mm_cfg.spread      = 10;
+  mm_cfg.symbol = "MSFT";
+  mm_cfg.mid_price = 500;
+  mm_cfg.spread = 10;
   mm_cfg.cancel_rate = 0.65;
 
-  fix::FixClient       mm1("127.0.0.1", PORT);
-  fix::FixClient       mm2("127.0.0.1", PORT);
-  fix::FixClient       agg1("127.0.0.1", PORT);
-  fix::FixClient       agg2("127.0.0.1", PORT);
+  fix::FixClient          mm1("127.0.0.1", PORT);
+  fix::FixClient          mm2("127.0.0.1", PORT);
+  fix::FixClient          agg1("127.0.0.1", PORT);
+  fix::FixClient          agg2("127.0.0.1", PORT);
   bench::TrafficGenerator gen1(mm_cfg);
   bench::TrafficGenerator gen2(mm_cfg);
 
@@ -340,7 +342,7 @@ static void BM_EndToEnd_MultiSymbol(benchmark::State& state)
 {
   ServerFixture srv;
 
-  const std::vector<std::string> symbols = {"AAPL", "MSFT", "GOOG", "AMZN"};
+  const std::vector<std::string>               symbols = {"AAPL", "MSFT", "GOOG", "AMZN"};
   std::vector<std::unique_ptr<fix::FixClient>> clients;
   std::vector<bench::TrafficGenerator>         gens;
 
@@ -348,9 +350,9 @@ static void BM_EndToEnd_MultiSymbol(benchmark::State& state)
   {
     clients.push_back(std::make_unique<fix::FixClient>("127.0.0.1", PORT));
     bench::TrafficConfig cfg;
-    cfg.symbol      = sym;
-    cfg.mid_price   = 500;
-    cfg.spread      = 10;
+    cfg.symbol = sym;
+    cfg.mid_price = 500;
+    cfg.spread = 10;
     cfg.cancel_rate = 0.5;
     gens.emplace_back(cfg);
   }

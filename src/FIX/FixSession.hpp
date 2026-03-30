@@ -9,12 +9,13 @@
 #include <string_view>
 
 #include "../gateway/SessionRegistry.hpp"
+#include "../gateway/SymbolRegistry.hpp"
 #include "../ipc/MPSC_Queue.hpp"
 #include "../ipc/OrderEvent.hpp"
 #include "../net/EventLoop.hpp"
 #include "../net/IoHandler.hpp"
 #include "FixMessage.hpp"
-#include "matching-engine/OrderStructures.hpp"
+#include "FixMessageBuilder.hpp"
 
 namespace fix
 {
@@ -24,8 +25,8 @@ class FixSession : public net::IoHandler
 {
  public:
   FixSession(int fd, net::EventLoop& loop, MPSC_Queue<ipc::OrderEvent, 65536>& inputq,
-             gateway::SessionRegistry& registry)
-      : fd_(fd), loop_(loop), input_q_(inputq), registry_(registry)
+             gateway::SessionRegistry& registry, gateway::SymbolRegistry& symbols)
+      : fd_(fd), loop_(loop), input_q_(inputq), registry_(registry), symbols_(symbols)
   {
   }
 
@@ -138,16 +139,23 @@ class FixSession : public net::IoHandler
 
   void dispatchMessage(std::string_view msg)
   {
-    auto req = FixMessage::parse(msg);
-    if (req.type != MsgType::UNKNOWN)
-      input_q_.tryPush(ipc::OrderEvent(req, session_id_));
+    auto req = FixMessage::parse(msg, symbols_);
+    if (req.type == MsgType::UNKNOWN)
+      return;
+
+    if (input_q_.tryPush(ipc::OrderEvent(req, session_id_)))
+    {
+      if (req.type == MsgType::NEW_LIMIT_ORDER || req.type == MsgType::NEW_MARKET_ORDER)
+        sendData(FixMessageBuilder::orderAck(req.uid, symbols_.name(req.symbol_id)));
+    }
   }
 
-  int                                fd_;
-  net::EventLoop&                    loop_;
+  int                                 fd_;
+  net::EventLoop&                     loop_;
   MPSC_Queue<ipc::OrderEvent, 65536>& input_q_;
-  gateway::SessionRegistry&          registry_;
-  LOB::SessionId                     session_id_{0};
+  gateway::SessionRegistry&           registry_;
+  gateway::SymbolRegistry&            symbols_;
+  LOB::SessionId                      session_id_{0};
 
   static constexpr size_t BUFFER_SIZE = 4096;
   char                    read_buf_[BUFFER_SIZE]{};

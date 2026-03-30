@@ -8,6 +8,7 @@
 #include "../../src/engine/EngineDispatcher.hpp"
 #include "../../src/fix/FixMessageBuilder.hpp"
 #include "../../src/gateway/SessionRegistry.hpp"
+#include "../../src/gateway/SymbolRegistry.hpp"
 #include "../../src/ipc/FillEvent.hpp"
 #include "../../src/ipc/MPSC_Queue.hpp"
 #include "../../src/ipc/OrderEvent.hpp"
@@ -21,9 +22,10 @@ class MultiClientTest : public ::testing::Test
   MPSC_Queue<ipc::OrderEvent, 65536> inputQ_;
   MPSC_Queue<ipc::FillEvent, 65536>  outputQ_;
   gateway::SessionRegistry           registry_;
+  gateway::SymbolRegistry            symbols_;
   fix::EngineDispatcher              dispatcher_{inputQ_, outputQ_};
   net::EventLoop                     loop_;
-  fix::FixServer                     server_{loop_, 12346, inputQ_, registry_};
+  fix::FixServer                     server_{loop_, 12346, inputQ_, registry_, symbols_};
   std::atomic<bool>                  serverRunning_{true};
   std::thread                        server_thread_;
   std::atomic<bool>                  drainRunning_{true};
