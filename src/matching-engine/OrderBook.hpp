@@ -19,7 +19,7 @@ class LimitOrderBook
   LimitTree<Side::SELL>             asks_;
   LimitTree<Side::BUY>              bids_;
   UIDOrderMap                       uid_to_order_map_;
-  MPSC_Queue<ipc::FillEvent, 4096>* fill_out_{nullptr};
+  MPSC_Queue<ipc::FillEvent, 65536>* fill_out_{nullptr};
   char                              symbol_[8] = {};
 
   void limitSell(UID order_uid, Quantity quantity, Price price, SessionId session_id);
@@ -29,7 +29,7 @@ class LimitOrderBook
 
  public:
   LimitOrderBook() = default;
-  LimitOrderBook(MPSC_Queue<ipc::FillEvent, 4096>& fill_out, const char* symbol)
+  LimitOrderBook(MPSC_Queue<ipc::FillEvent, 65536>& fill_out, const char* symbol)
       : fill_out_(&fill_out)
   {
     std::memcpy(symbol_, symbol, 8);

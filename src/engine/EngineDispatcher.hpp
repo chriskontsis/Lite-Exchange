@@ -23,8 +23,8 @@ inline uint64_t symbolToKey(const char* sym)
 class EngineDispatcher
 {
  public:
-  EngineDispatcher(MPSC_Queue<ipc::OrderEvent, 4096>& input,
-                   MPSC_Queue<ipc::FillEvent, 4096>&  output)
+  EngineDispatcher(MPSC_Queue<ipc::OrderEvent, 65536>& input,
+                   MPSC_Queue<ipc::FillEvent, 65536>&  output)
       : input_(input), output_(output)
   {
     match_thread_ = std::thread(&EngineDispatcher::matchingLoop, this);
@@ -37,8 +37,8 @@ class EngineDispatcher
   }
 
  private:
-  MPSC_Queue<ipc::OrderEvent, 4096>&                                 input_;
-  MPSC_Queue<ipc::FillEvent, 4096>&                                  output_;
+  MPSC_Queue<ipc::OrderEvent, 65536>&                                input_;
+  MPSC_Queue<ipc::FillEvent, 65536>&                                 output_;
   std::unordered_map<uint64_t, std::unique_ptr<LOB::LimitOrderBook>> books_;
   std::thread                                                        match_thread_;
   std::atomic<bool>                                                  running_{true};

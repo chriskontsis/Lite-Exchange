@@ -23,7 +23,7 @@ using net::Watch;
 class FixSession : public net::IoHandler
 {
  public:
-  FixSession(int fd, net::EventLoop& loop, MPSC_Queue<ipc::OrderEvent, 4096>& inputq,
+  FixSession(int fd, net::EventLoop& loop, MPSC_Queue<ipc::OrderEvent, 65536>& inputq,
              gateway::SessionRegistry& registry)
       : fd_(fd), loop_(loop), input_q_(inputq), registry_(registry)
   {
@@ -145,7 +145,7 @@ class FixSession : public net::IoHandler
 
   int                                fd_;
   net::EventLoop&                    loop_;
-  MPSC_Queue<ipc::OrderEvent, 4096>& input_q_;
+  MPSC_Queue<ipc::OrderEvent, 65536>& input_q_;
   gateway::SessionRegistry&          registry_;
   LOB::SessionId                     session_id_{0};
 

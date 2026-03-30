@@ -14,9 +14,9 @@
 
 int main()
 {
-  MPSC_Queue<ipc::OrderEvent, 4096> inputQ;
-  MPSC_Queue<ipc::FillEvent, 4096>  outputQ;
-  gateway::SessionRegistry          registry;
+  MPSC_Queue<ipc::OrderEvent, 65536> inputQ;
+  MPSC_Queue<ipc::FillEvent, 65536>  outputQ;
+  gateway::SessionRegistry           registry;
 
   fix::EngineDispatcher dispatcher(inputQ, outputQ);
 

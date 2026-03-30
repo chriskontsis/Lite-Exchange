@@ -14,7 +14,7 @@ namespace fix
 class FixServer : public ServerBase<FixServer>
 {
  public:
-  FixServer(net::EventLoop& loop, short port, MPSC_Queue<ipc::OrderEvent, 4096>& inputq,
+  FixServer(net::EventLoop& loop, short port, MPSC_Queue<ipc::OrderEvent, 65536>& inputq,
             gateway::SessionRegistry& registry)
       : ServerBase(loop, port), input_q_(inputq), registry_(registry)
   {
@@ -39,7 +39,7 @@ class FixServer : public ServerBase<FixServer>
   }
 
  private:
-  MPSC_Queue<ipc::OrderEvent, 4096>&                   input_q_;
+  MPSC_Queue<ipc::OrderEvent, 65536>&                   input_q_;
   gateway::SessionRegistry&                            registry_;
   std::unordered_map<int, std::shared_ptr<FixSession>> sessions_;
 };
