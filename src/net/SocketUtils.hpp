@@ -48,6 +48,10 @@ inline int makeListenSocket(uint16_t port)
   if (fd < 0)
     throw std::runtime_error("socket() failed");
   setReuseAddr(fd);
+
+  int rp = 1;
+  ::setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, &rp, sizeof(rp));
+
   setNonBlocking(fd);
 
   sockaddr_in addr{};
