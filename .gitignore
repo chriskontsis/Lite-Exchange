@@ -39,3 +39,26 @@ build/
 CLAUDE.md
 
 compile_commands.json
+
+# CMake artifacts
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CTestTestfile.cmake
+_deps/
+
+# Core dumps
+core
+core.*
+*.core
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Test output
+Testing/
+
+# SSH keys / secrets
+*.pem
+*.key
