@@ -85,10 +85,16 @@ struct ServerFixture
   }
 };
 
+static ServerFixture& getFixture()
+{
+  static ServerFixture instance;
+  return instance;
+}
+
 // Scenario 1: limit order send rate (no matches)
 static void BM_EndToEnd_LimitFlood(benchmark::State& state)
 {
-  ServerFixture  srv;
+  ServerFixture& srv = getFixture();
   fix::FixClient client("127.0.0.1", PORT);
   std::string    msg = fix::FixMessageBuilder::limit<LOB::Side::BUY>(1, 1, 100, "AAPL");
 
@@ -127,7 +133,7 @@ BENCHMARK(BM_EndToEnd_MatchedPairs)->Iterations(1000);
 // client per iteration exercises the MPSC queue with N concurrent producers.
 static void BM_EndToEnd_MultiClientFlood(benchmark::State& state)
 {
-  ServerFixture srv;
+  ServerFixture& srv = getFixture();
   const int     num_clients = state.range(0);
 
   std::vector<std::unique_ptr<fix::FixClient>> clients;
@@ -162,7 +168,7 @@ BENCHMARK(BM_EndToEnd_MultiClientFlood)->Arg(2)->Arg(4)->Arg(8)->Iterations(2000
 // Every order matches immediately. Measures max fills/sec the system can sustain.
 static void BM_EndToEnd_FillThroughput(benchmark::State& state)
 {
-  ServerFixture srv;
+  ServerFixture& srv = getFixture();
   const int     num_pairs = state.range(0);
 
   std::atomic<uint64_t> fills{0};
@@ -301,7 +307,7 @@ BENCHMARK(BM_EndToEnd_DeepBookSweep)->Iterations(50);
 // market-maker traffic is in flight — reveals contention hidden by isolated tests.
 static void BM_EndToEnd_SteadyState(benchmark::State& state)
 {
-  ServerFixture srv;
+  ServerFixture& srv = getFixture();
 
   bench::TrafficConfig mm_cfg;
   mm_cfg.symbol = "MSFT";
@@ -340,7 +346,7 @@ BENCHMARK(BM_EndToEnd_SteadyState)->Iterations(2000);
 // matching thread is the bottleneck across symbols.
 static void BM_EndToEnd_MultiSymbol(benchmark::State& state)
 {
-  ServerFixture srv;
+  ServerFixture& srv = getFixture();
 
   const std::vector<std::string>               symbols = {"AAPL", "MSFT", "GOOG", "AMZN"};
   std::vector<std::unique_ptr<fix::FixClient>> clients;
