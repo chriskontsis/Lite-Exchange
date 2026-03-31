@@ -132,7 +132,8 @@ void FixClient::doRead()
 void FixClient::send(const std::string& msg)
 {
   uint64_t ts = tracking_ ? read_tsc() : 0;
-  ::write(fd_, msg.data(), msg.size());
+  if (::write(fd_, msg.data(), msg.size()) < 0)
+    return;
   if (tracking_)
   {
     auto pos = msg.find("11=");

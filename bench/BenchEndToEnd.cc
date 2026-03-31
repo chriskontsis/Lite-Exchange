@@ -2,7 +2,11 @@
 
 #include <atomic>
 #include <chrono>
+#include <csignal>
 #include <thread>
+
+void ignoreSigpipe() __attribute__((constructor));
+void ignoreSigpipe() { signal(SIGPIPE, SIG_IGN); }
 
 #include "../src/client/FixClient.hpp"
 #include "../src/engine/EngineDispatcher.hpp"
