@@ -73,13 +73,14 @@ struct ServerFixture
             }
           }
         });
-    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
   }
 
   ~ServerFixture()
   {
     server_running.store(false);
     drain_running.store(false);
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
     server_thread.join();
     drain_thread.join();
   }
