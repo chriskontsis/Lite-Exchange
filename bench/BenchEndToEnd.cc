@@ -18,8 +18,6 @@
 #include "BookSeeder.hpp"
 #include "TrafficGenerator.hpp"
 
-static constexpr short PORT = 12399;
-
 struct ServerFixture
 {
   std::unique_ptr<MPSC_Queue<ipc::OrderEvent, 65536>> inputQ{
@@ -30,14 +28,16 @@ struct ServerFixture
   gateway::SymbolRegistry  symbols;
   fix::EngineDispatcher    dispatcher{*inputQ, *outputQ};
   net::EventLoop           loop;
-  fix::FixServer           server{loop, PORT, *inputQ, registry, symbols};
+  short                    port_;
+  fix::FixServer           server;
   std::atomic<bool>        server_running{true};
   std::thread              server_thread;
   std::atomic<bool>        drain_running{true};
   std::atomic<uint64_t>    fills_received{0};
   std::thread              drain_thread;
 
-  ServerFixture()
+  ServerFixture(short port)
+      : port_(port), server{loop, port, *inputQ, registry, symbols}
   {
     server_thread = std::thread(
         [this]()
@@ -85,17 +85,22 @@ struct ServerFixture
   }
 };
 
-static ServerFixture& getFixture()
-{
-  static ServerFixture instance;
-  return instance;
-}
+// Each benchmark gets its own port to avoid TIME_WAIT conflicts
+static constexpr short PORT_LIMIT_FLOOD    = 12400;
+static constexpr short PORT_MATCHED_PAIRS  = 12401;
+static constexpr short PORT_MULTI_CLIENT   = 12402;
+static constexpr short PORT_FILL_TPUT      = 12403;
+static constexpr short PORT_LATENCY        = 12404;
+static constexpr short PORT_CANCEL         = 12405;
+static constexpr short PORT_DEEP_SWEEP     = 12406;
+static constexpr short PORT_STEADY         = 12407;
+static constexpr short PORT_MULTI_SYMBOL   = 12408;
 
 // Scenario 1: limit order send rate (no matches)
 static void BM_EndToEnd_LimitFlood(benchmark::State& state)
 {
-  ServerFixture& srv = getFixture();
-  fix::FixClient client("127.0.0.1", PORT);
+  ServerFixture  srv(PORT_LIMIT_FLOOD);
+  fix::FixClient client("127.0.0.1", PORT_LIMIT_FLOOD);
   std::string    msg = fix::FixMessageBuilder::limit<LOB::Side::BUY>(1, 1, 100, "AAPL");
 
   for (auto _ : state)
@@ -108,9 +113,9 @@ BENCHMARK(BM_EndToEnd_LimitFlood)->Iterations(10000);
 // Scenario 2: matched pairs — measures full round trip including fill delivery
 static void BM_EndToEnd_MatchedPairs(benchmark::State& state)
 {
-  ServerFixture  srv;
-  fix::FixClient c1("127.0.0.1", PORT);
-  fix::FixClient c2("127.0.0.1", PORT);
+  ServerFixture  srv(PORT_MATCHED_PAIRS);
+  fix::FixClient c1("127.0.0.1", PORT_MATCHED_PAIRS);
+  fix::FixClient c2("127.0.0.1", PORT_MATCHED_PAIRS);
 
   LOB::UID uid = 1;
   for (auto _ : state)
@@ -119,7 +124,6 @@ static void BM_EndToEnd_MatchedPairs(benchmark::State& state)
     c1.send(fix::FixMessageBuilder::limit<LOB::Side::BUY>(uid++, 1, 100, "MSFT"));
     c2.send(fix::FixMessageBuilder::limit<LOB::Side::SELL>(uid++, 1, 100, "MSFT"));
 
-    // wait for both fill events (aggressor + resting)
     while (srv.fills_received.load(std::memory_order_relaxed) < 2)
       ;
   }
@@ -129,17 +133,15 @@ static void BM_EndToEnd_MatchedPairs(benchmark::State& state)
 BENCHMARK(BM_EndToEnd_MatchedPairs)->Iterations(1000);
 
 // Aggregate throughput — N persistent connections, round-robin sends.
-// Persistent connections avoid TCP handshake cost; round-robin sends from each
-// client per iteration exercises the MPSC queue with N concurrent producers.
 static void BM_EndToEnd_MultiClientFlood(benchmark::State& state)
 {
-  ServerFixture& srv = getFixture();
+  ServerFixture srv(PORT_MULTI_CLIENT);
   const int     num_clients = state.range(0);
 
   std::vector<std::unique_ptr<fix::FixClient>> clients;
   clients.reserve(num_clients);
   for (int i = 0; i < num_clients; ++i)
-    clients.push_back(std::make_unique<fix::FixClient>("127.0.0.1", PORT));
+    clients.push_back(std::make_unique<fix::FixClient>("127.0.0.1", PORT_MULTI_CLIENT));
 
   LOB::UID uid = 1;
   for (auto _ : state)
@@ -165,20 +167,18 @@ static void BM_EndToEnd_MultiClientFlood(benchmark::State& state)
 BENCHMARK(BM_EndToEnd_MultiClientFlood)->Arg(2)->Arg(4)->Arg(8)->Iterations(2000);
 
 // Peak fill throughput — N buy + N sell clients, all crossing at the same price.
-// Every order matches immediately. Measures max fills/sec the system can sustain.
 static void BM_EndToEnd_FillThroughput(benchmark::State& state)
 {
-  ServerFixture& srv = getFixture();
-  const int     num_pairs = state.range(0);
-
+  ServerFixture         srv(PORT_FILL_TPUT);
+  const int             num_pairs = state.range(0);
   std::atomic<uint64_t> fills{0};
   auto on_fill = [&](std::string_view) { fills.fetch_add(1, std::memory_order_relaxed); };
 
   std::vector<std::unique_ptr<fix::FixClient>> buyers, sellers;
   for (int i = 0; i < num_pairs; ++i)
   {
-    buyers.push_back(std::make_unique<fix::FixClient>("127.0.0.1", PORT, on_fill));
-    sellers.push_back(std::make_unique<fix::FixClient>("127.0.0.1", PORT, on_fill));
+    buyers.push_back(std::make_unique<fix::FixClient>("127.0.0.1", PORT_FILL_TPUT, on_fill));
+    sellers.push_back(std::make_unique<fix::FixClient>("127.0.0.1", PORT_FILL_TPUT, on_fill));
   }
 
   LOB::UID uid{1};
@@ -198,13 +198,12 @@ static void BM_EndToEnd_FillThroughput(benchmark::State& state)
 }
 BENCHMARK(BM_EndToEnd_FillThroughput)->Arg(1)->Arg(2)->Arg(4)->Iterations(500);
 
-// Matched pairs with latency distribution — shows p50/p99/p999 tail latency.
-// The most interview-relevant number: full tick-to-fill round-trip percentiles.
+// Matched pairs with latency distribution — p50/p99/p999 tail latency.
 static void BM_EndToEnd_MatchedPairs_Latency(benchmark::State& state)
 {
-  ServerFixture  srv;
-  fix::FixClient c1("127.0.0.1", PORT);
-  fix::FixClient c2("127.0.0.1", PORT);
+  ServerFixture  srv(PORT_LATENCY);
+  fix::FixClient c1("127.0.0.1", PORT_LATENCY);
+  fix::FixClient c2("127.0.0.1", PORT_LATENCY);
 
   LOB::UID uid = 1;
   for (auto _ : state)
@@ -245,17 +244,15 @@ BENCHMARK(BM_EndToEnd_MatchedPairs_Latency)
                         });
 
 // Scenario: realistic message mix — 65% cancels, 35% new limit orders.
-// No matches (TrafficGenerator keeps bids below mid, asks above mid).
-// Measures gateway + engine throughput under real-world order flow.
 static void BM_EndToEnd_CancelPressure(benchmark::State& state)
 {
-  ServerFixture  srv;
-  fix::FixClient client("127.0.0.1", PORT);
+  ServerFixture  srv(PORT_CANCEL);
+  fix::FixClient client("127.0.0.1", PORT_CANCEL);
 
   bench::TrafficConfig cfg;
-  cfg.symbol = "AAPL";
-  cfg.mid_price = 500;
-  cfg.spread = 10;
+  cfg.symbol      = "AAPL";
+  cfg.mid_price   = 500;
+  cfg.spread      = 10;
   cfg.cancel_rate = 0.65;
   bench::TrafficGenerator gen(cfg);
 
@@ -266,26 +263,23 @@ static void BM_EndToEnd_CancelPressure(benchmark::State& state)
 }
 BENCHMARK(BM_EndToEnd_CancelPressure)->Iterations(10000);
 
-// Scenario: pre-seed 20 ask levels x 10 orders, then send one market buy
-// that sweeps all 200 resting orders. Measures LimitTree::market() walk
-// cost under realistic book depth.
+// Scenario: pre-seed 20 ask levels x 10 orders, sweep with one market buy.
 static void BM_EndToEnd_DeepBookSweep(benchmark::State& state)
 {
-  ServerFixture  srv;
-  fix::FixClient seeder("127.0.0.1", PORT, [](std::string_view) {});
-  fix::FixClient aggressor("127.0.0.1", PORT, [](std::string_view) {});
+  ServerFixture  srv(PORT_DEEP_SWEEP);
+  fix::FixClient seeder("127.0.0.1", PORT_DEEP_SWEEP, [](std::string_view) {});
+  fix::FixClient aggressor("127.0.0.1", PORT_DEEP_SWEEP, [](std::string_view) {});
 
   bench::SeedConfig scfg;
-  scfg.symbol_ = "GOOG";
-  scfg.mid_price_ = 500;
-  scfg.num_levels_ = 20;
+  scfg.symbol_          = "GOOG";
+  scfg.mid_price_       = 500;
+  scfg.num_levels_      = 20;
   scfg.orders_per_level_ = 10;
-  scfg.drain_wait_ms_ = 150;
+  scfg.drain_wait_ms_   = 150;
 
   LOB::UID uid = 2'000'000;
   for (auto _ : state)
   {
-    // exclude seeding from measurement — it's setup, not the thing being timed
     state.PauseTiming();
     bench::seedBook(seeder, scfg);
     srv.fills_received.store(0, std::memory_order_relaxed);
@@ -293,7 +287,6 @@ static void BM_EndToEnd_DeepBookSweep(benchmark::State& state)
 
     aggressor.send(fix::FixMessageBuilder::market<LOB::Side::BUY>(uid++, 200, "GOOG"));
 
-    // 200 resting fills + 1 aggressor fill
     while (srv.fills_received.load(std::memory_order_relaxed) < 201)
       ;
   }
@@ -302,23 +295,21 @@ static void BM_EndToEnd_DeepBookSweep(benchmark::State& state)
 }
 BENCHMARK(BM_EndToEnd_DeepBookSweep)->Iterations(50);
 
-// Scenario: 2 market-maker clients quoting/canceling + 2 aggressors crossing.
-// All 4 clients run concurrently. Measures aggressor round-trip latency while
-// market-maker traffic is in flight — reveals contention hidden by isolated tests.
+// Scenario: 2 market-maker clients + 2 aggressors crossing simultaneously.
 static void BM_EndToEnd_SteadyState(benchmark::State& state)
 {
-  ServerFixture& srv = getFixture();
+  ServerFixture srv(PORT_STEADY);
 
   bench::TrafficConfig mm_cfg;
-  mm_cfg.symbol = "MSFT";
-  mm_cfg.mid_price = 500;
-  mm_cfg.spread = 10;
+  mm_cfg.symbol      = "MSFT";
+  mm_cfg.mid_price   = 500;
+  mm_cfg.spread      = 10;
   mm_cfg.cancel_rate = 0.65;
 
-  fix::FixClient          mm1("127.0.0.1", PORT);
-  fix::FixClient          mm2("127.0.0.1", PORT);
-  fix::FixClient          agg1("127.0.0.1", PORT);
-  fix::FixClient          agg2("127.0.0.1", PORT);
+  fix::FixClient          mm1("127.0.0.1", PORT_STEADY);
+  fix::FixClient          mm2("127.0.0.1", PORT_STEADY);
+  fix::FixClient          agg1("127.0.0.1", PORT_STEADY);
+  fix::FixClient          agg2("127.0.0.1", PORT_STEADY);
   bench::TrafficGenerator gen1(mm_cfg);
   bench::TrafficGenerator gen2(mm_cfg);
 
@@ -342,11 +333,9 @@ static void BM_EndToEnd_SteadyState(benchmark::State& state)
 BENCHMARK(BM_EndToEnd_SteadyState)->Iterations(2000);
 
 // Scenario: 4 symbols with independent order flow running concurrently.
-// Key signal: if aggregate throughput < 4x BM_EndToEnd_LimitFlood, the single
-// matching thread is the bottleneck across symbols.
 static void BM_EndToEnd_MultiSymbol(benchmark::State& state)
 {
-  ServerFixture& srv = getFixture();
+  ServerFixture srv(PORT_MULTI_SYMBOL);
 
   const std::vector<std::string>               symbols = {"AAPL", "MSFT", "GOOG", "AMZN"};
   std::vector<std::unique_ptr<fix::FixClient>> clients;
@@ -354,11 +343,11 @@ static void BM_EndToEnd_MultiSymbol(benchmark::State& state)
 
   for (const auto& sym : symbols)
   {
-    clients.push_back(std::make_unique<fix::FixClient>("127.0.0.1", PORT));
+    clients.push_back(std::make_unique<fix::FixClient>("127.0.0.1", PORT_MULTI_SYMBOL));
     bench::TrafficConfig cfg;
-    cfg.symbol = sym;
-    cfg.mid_price = 500;
-    cfg.spread = 10;
+    cfg.symbol      = sym;
+    cfg.mid_price   = 500;
+    cfg.spread      = 10;
     cfg.cancel_rate = 0.5;
     gens.emplace_back(cfg);
   }
