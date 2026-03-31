@@ -8,7 +8,7 @@
 template <typename T>
 class TSQueue
 {
-public:
+ public:
   TSQueue() = default;
   TSQueue(const TSQueue<T>&) = delete;
   virtual ~TSQueue() { clear(); }
@@ -71,7 +71,7 @@ public:
     return t;
   }
 
-protected:
+ protected:
   std::mutex    mutex_;
   std::deque<T> ts_queue_;
 };

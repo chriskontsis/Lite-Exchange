@@ -8,8 +8,8 @@
 
 class FixClientAutomation
 {
-public:
-private:
+ public:
+ private:
   std::vector<std::thread> clients_;
   uint8_t                  num_clients_ = 0;
   std::string              orders_file_;

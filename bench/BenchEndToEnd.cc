@@ -6,7 +6,10 @@
 #include <thread>
 
 void ignoreSigpipe() __attribute__((constructor));
-void ignoreSigpipe() { signal(SIGPIPE, SIG_IGN); }
+void ignoreSigpipe()
+{
+  signal(SIGPIPE, SIG_IGN);
+}
 
 #include "../src/client/FixClient.hpp"
 #include "../src/engine/EngineDispatcher.hpp"
@@ -41,8 +44,7 @@ struct ServerFixture
   std::atomic<uint64_t>    fills_received{0};
   std::thread              drain_thread;
 
-  ServerFixture(short port)
-      : port_(port), server{loop, port, *inputQ, registry, symbols}
+  ServerFixture(short port) : port_(port), server{loop, port, *inputQ, registry, symbols}
   {
     server_thread = std::thread(
         [this]()
@@ -94,15 +96,15 @@ struct ServerFixture
 };
 
 // Each benchmark gets its own port to avoid TIME_WAIT conflicts
-static constexpr short PORT_LIMIT_FLOOD    = 12400;
-static constexpr short PORT_MATCHED_PAIRS  = 12401;
-static constexpr short PORT_MULTI_CLIENT   = 12402;
-static constexpr short PORT_FILL_TPUT      = 12403;
-static constexpr short PORT_LATENCY        = 12404;
-static constexpr short PORT_CANCEL         = 12405;
-static constexpr short PORT_DEEP_SWEEP     = 12406;
-static constexpr short PORT_STEADY         = 12407;
-static constexpr short PORT_MULTI_SYMBOL   = 12408;
+static constexpr short PORT_LIMIT_FLOOD = 12400;
+static constexpr short PORT_MATCHED_PAIRS = 12401;
+static constexpr short PORT_MULTI_CLIENT = 12402;
+static constexpr short PORT_FILL_TPUT = 12403;
+static constexpr short PORT_LATENCY = 12404;
+static constexpr short PORT_CANCEL = 12405;
+static constexpr short PORT_DEEP_SWEEP = 12406;
+static constexpr short PORT_STEADY = 12407;
+static constexpr short PORT_MULTI_SYMBOL = 12408;
 
 // Scenario 1: limit order send rate (no matches)
 static void BM_EndToEnd_LimitFlood(benchmark::State& state)
@@ -257,9 +259,9 @@ static void BM_EndToEnd_CancelPressure(benchmark::State& state)
   fix::FixClient client("127.0.0.1", PORT_CANCEL);
 
   bench::TrafficConfig cfg;
-  cfg.symbol      = "AAPL";
-  cfg.mid_price   = 500;
-  cfg.spread      = 10;
+  cfg.symbol = "AAPL";
+  cfg.mid_price = 500;
+  cfg.spread = 10;
   cfg.cancel_rate = 0.65;
   bench::TrafficGenerator gen(cfg);
 
@@ -278,11 +280,11 @@ static void BM_EndToEnd_DeepBookSweep(benchmark::State& state)
   fix::FixClient aggressor("127.0.0.1", PORT_DEEP_SWEEP, [](std::string_view) {});
 
   bench::SeedConfig scfg;
-  scfg.symbol_          = "GOOG";
-  scfg.mid_price_       = 500;
-  scfg.num_levels_      = 20;
+  scfg.symbol_ = "GOOG";
+  scfg.mid_price_ = 500;
+  scfg.num_levels_ = 20;
   scfg.orders_per_level_ = 10;
-  scfg.drain_wait_ms_   = 150;
+  scfg.drain_wait_ms_ = 150;
 
   LOB::UID uid = 2'000'000;
   for (auto _ : state)
@@ -308,9 +310,9 @@ static void BM_EndToEnd_SteadyState(benchmark::State& state)
   ServerFixture srv(PORT_STEADY);
 
   bench::TrafficConfig mm_cfg;
-  mm_cfg.symbol      = "MSFT";
-  mm_cfg.mid_price   = 500;
-  mm_cfg.spread      = 10;
+  mm_cfg.symbol = "MSFT";
+  mm_cfg.mid_price = 500;
+  mm_cfg.spread = 10;
   mm_cfg.cancel_rate = 0.65;
 
   fix::FixClient          mm1("127.0.0.1", PORT_STEADY);
@@ -352,9 +354,9 @@ static void BM_EndToEnd_MultiSymbol(benchmark::State& state)
   {
     clients.push_back(std::make_unique<fix::FixClient>("127.0.0.1", PORT_MULTI_SYMBOL));
     bench::TrafficConfig cfg;
-    cfg.symbol      = sym;
-    cfg.mid_price   = 500;
-    cfg.spread      = 10;
+    cfg.symbol = sym;
+    cfg.mid_price = 500;
+    cfg.spread = 10;
     cfg.cancel_rate = 0.5;
     gens.emplace_back(cfg);
   }

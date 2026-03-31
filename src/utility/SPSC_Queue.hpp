@@ -7,7 +7,7 @@
 template <typename T>
 class SPSC_Queue
 {
-public:
+ public:
   SPSC_Queue(int capacity) : ring_buffer_(capacity + 1), write_pos_(0), read_pos_(0)
   {
     assert(capacity > 0);
@@ -53,13 +53,10 @@ public:
     return true;
   }
 
-private:
-  inline int increment(int pos) const
-  {
-    return (pos + 1) % static_cast<int>(ring_buffer_.size());
-  }
+ private:
+  inline int increment(int pos) const { return (pos + 1) % static_cast<int>(ring_buffer_.size()); }
 
   alignas(64) std::atomic<int> read_pos_;
   alignas(64) std::atomic<int> write_pos_;
-  std::vector<T>               ring_buffer_;
+  std::vector<T> ring_buffer_;
 };
