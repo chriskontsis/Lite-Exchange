@@ -19,13 +19,13 @@
 class MultiClientTest : public ::testing::Test
 {
  protected:
-  MPSC_Queue<ipc::OrderEvent, 65536> inputQ_;
-  MPSC_Queue<ipc::FillEvent, 65536>  outputQ_;
+  std::unique_ptr<MPSC_Queue<ipc::OrderEvent, 65536>> inputQ_{new MPSC_Queue<ipc::OrderEvent, 65536>()};                    
+  std::unique_ptr<MPSC_Queue<ipc::FillEvent, 65536>>  outputQ_{new MPSC_Queue<ipc::FillEvent, 65536>()};  
   gateway::SessionRegistry           registry_;
   gateway::SymbolRegistry            symbols_;
-  fix::EngineDispatcher              dispatcher_{inputQ_, outputQ_};
+  fix::EngineDispatcher              dispatcher_{*inputQ_, *outputQ_};
   net::EventLoop                     loop_;
-  fix::FixServer                     server_{loop_, 12346, inputQ_, registry_, symbols_};
+  fix::FixServer                     server_{loop_, 12346, *inputQ_, registry_, symbols_};
   std::atomic<bool>                  serverRunning_{true};
   std::thread                        server_thread_;
   std::atomic<bool>                  drainRunning_{true};
@@ -48,7 +48,7 @@ class MultiClientTest : public ::testing::Test
               if (events[i].writable)
                 handler->onWritable();
               if (handler->wantsClose())
-                server_.closeSession(events[i].fd);
+                server_.closeSession(handler->fd());
             }
           }
         });
@@ -57,7 +57,7 @@ class MultiClientTest : public ::testing::Test
         {
           ipc::FillEvent fe;
           while (drainRunning_.load(std::memory_order_relaxed))
-            outputQ_.tryConsume(fe);
+            outputQ_->tryConsume(fe);
         });
   }
 

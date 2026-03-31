@@ -54,7 +54,7 @@ int main()
       if (events[i].writable)
         handler->onWritable();
       if (handler->wantsClose())
-        server.closeSession(events[i].fd);
+        server.closeSession(handler->fd());
     }
   }
 
