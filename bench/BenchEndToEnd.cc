@@ -19,6 +19,7 @@ void ignoreSigpipe() { signal(SIGPIPE, SIG_IGN); }
 #include "../src/net/EventLoop.hpp"
 #include "../src/net/IoHandler.hpp"
 #include "../src/server/FixServer.hpp"
+#include "../src/utility/ThreadAffinity.hpp"
 #include "BookSeeder.hpp"
 #include "TrafficGenerator.hpp"
 
@@ -47,6 +48,7 @@ struct ServerFixture
         [this]()
         {
           net::Event events[64];
+          util::pinToCore(2);
           while (server_running.load(std::memory_order_relaxed))
           {
             int n = loop.wait(events, 64, /*timeout_ms=*/1);
@@ -65,6 +67,7 @@ struct ServerFixture
     drain_thread = std::thread(
         [this]()
         {
+          util::pinToCore(1);
           ipc::FillEvent fe;
           while (drain_running.load(std::memory_order_relaxed))
           {

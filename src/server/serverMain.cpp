@@ -11,6 +11,7 @@
 #include "../net/EventLoop.hpp"
 #include "../net/IoHandler.hpp"
 #include "FixServer.hpp"
+#include "utility/ThreadAffinity.hpp"
 
 int main()
 {
@@ -28,6 +29,7 @@ int main()
   std::thread       drainThread(
       [&]()
       {
+        util::pinToCore(1);
         ipc::FillEvent fe;
         while (running.load(std::memory_order_relaxed))
         {
@@ -40,6 +42,7 @@ int main()
         }
       });
 
+  util::pinToCore(2);
   std::cout << "Exchange listening on port 12345\n";
   net::Event events[64];
 

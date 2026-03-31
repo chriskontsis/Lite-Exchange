@@ -8,7 +8,6 @@
 
 #include <atomic>
 #include <chrono>
-#include <iostream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -119,8 +118,6 @@ void FixClient::doRead()
       }
       if (on_message_)
         on_message_(std::string_view(data_, n));
-      else
-        std::cout << "Server: " << std::string_view(data_, n) << '\n';
     }
     else
     {

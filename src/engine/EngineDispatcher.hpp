@@ -9,6 +9,7 @@
 #include "../ipc/MPSC_Queue.hpp"
 #include "../ipc/OrderEvent.hpp"
 #include "../matching-engine/OrderBook.hpp"
+#include "utility/ThreadAffinity.hpp"
 
 namespace fix
 {
@@ -45,6 +46,7 @@ class EngineDispatcher
   void matchingLoop()
   {
     ipc::OrderEvent ev;
+    util::pinToCore(0);
     while (running_.load(std::memory_order_relaxed))
     {
       if (input_.tryConsume(ev))
