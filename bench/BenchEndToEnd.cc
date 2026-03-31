@@ -169,32 +169,31 @@ BENCHMARK(BM_EndToEnd_MultiClientFlood)->Arg(2)->Arg(4)->Arg(8)->Iterations(2000
 // Peak fill throughput — N buy + N sell clients, all crossing at the same price.
 static void BM_EndToEnd_FillThroughput(benchmark::State& state)
 {
-  ServerFixture         srv(PORT_FILL_TPUT);
-  const int             num_pairs = state.range(0);
-  std::atomic<uint64_t> fills{0};
-  auto on_fill = [&](std::string_view) { fills.fetch_add(1, std::memory_order_relaxed); };
+  ServerFixture srv(PORT_FILL_TPUT);
+  const int     num_pairs = state.range(0);
 
   std::vector<std::unique_ptr<fix::FixClient>> buyers, sellers;
   for (int i = 0; i < num_pairs; ++i)
   {
-    buyers.push_back(std::make_unique<fix::FixClient>("127.0.0.1", PORT_FILL_TPUT, on_fill));
-    sellers.push_back(std::make_unique<fix::FixClient>("127.0.0.1", PORT_FILL_TPUT, on_fill));
+    buyers.push_back(std::make_unique<fix::FixClient>("127.0.0.1", PORT_FILL_TPUT));
+    sellers.push_back(std::make_unique<fix::FixClient>("127.0.0.1", PORT_FILL_TPUT));
   }
 
   LOB::UID uid{1};
   for (auto _ : state)
   {
-    uint64_t expected = fills.load(std::memory_order_relaxed) + num_pairs * 2;
+    srv.fills_received.store(0, std::memory_order_relaxed);
     for (int i = 0; i < num_pairs; ++i)
     {
       buyers[i]->send(fix::FixMessageBuilder::limit<LOB::Side::BUY>(uid++, 1, 100, "MSFT"));
       sellers[i]->send(fix::FixMessageBuilder::limit<LOB::Side::SELL>(uid++, 1, 100, "MSFT"));
     }
-    while (fills.load(std::memory_order_relaxed) < expected)
+    while (srv.fills_received.load(std::memory_order_relaxed) <
+           static_cast<uint64_t>(num_pairs * 2))
       ;
   }
 
-  state.SetItemsProcessed(fills.load());
+  state.SetItemsProcessed(state.iterations() * num_pairs * 2);
 }
 BENCHMARK(BM_EndToEnd_FillThroughput)->Arg(1)->Arg(2)->Arg(4)->Iterations(500);
 
