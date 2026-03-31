@@ -2,12 +2,12 @@
 #include <cstdint>
 #include "OrderStructures.hpp"
 
-template <size_t N>
+template <std::size_t N>
 concept PowerOfTwo = (N > 0) && ((N & (N-1)) == 0);
 
 namespace LOB {
 
-    template <size_t Cap> requires PowerOfTwo<Cap>
+    template <std::size_t Cap> requires PowerOfTwo<Cap>
     class OrderPool 
     {
         public:

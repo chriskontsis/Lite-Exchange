@@ -207,8 +207,8 @@
         out[n].writable = (res & POLLOUT) != 0;
         n++;
       }
+      
 
-      // Re-arm: POLL_ADD is one-shot, resubmit for each fd that fired
       for (int i = 0; i < n; ++i)
       {
         auto it = fd_info_.find(out[i].fd);
