@@ -2,7 +2,6 @@
 #define MESSAGE_QUEUE_HPP
 
 #include <deque>
-#include <memory>
 #include <mutex>
 
 template <typename T>

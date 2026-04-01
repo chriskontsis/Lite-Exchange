@@ -19,7 +19,7 @@ class SessionRegistry
  public:
   SessionId registerSession(fix::FixSession* s)
   {
-    SessionId        id = next_id_.fetch_add(1, std::memory_order_relaxed);
+    SessionId                           id = next_id_.fetch_add(1, std::memory_order_relaxed);
     std::unique_lock<std::shared_mutex> lock(mutex_);
     sessions_[id] = s;
     return id;
@@ -34,7 +34,7 @@ class SessionRegistry
   fix::FixSession* lookup(SessionId id) const
   {
     std::shared_lock<std::shared_mutex> lck(mutex_);
-    auto             it = sessions_.find(id);
+    auto                                it = sessions_.find(id);
     if (it == sessions_.end())
       return nullptr;
     return it->second;

@@ -53,7 +53,7 @@ struct ServerFixture
           util::pinToCore(2);
           while (server_running.load(std::memory_order_relaxed))
           {
-            int n = loop.wait(events, 64, /*timeout_ms=*/1);
+            int n = loop.wait(events, 64, 0);
             for (int i = 0; i < n; ++i)
             {
               auto* handler = static_cast<net::IoHandler*>(events[i].ctx);
@@ -104,7 +104,8 @@ static constexpr short PORT_LATENCY = 12404;
 static constexpr short PORT_CANCEL = 12405;
 static constexpr short PORT_DEEP_SWEEP = 12406;
 static constexpr short PORT_STEADY = 12407;
-static constexpr short PORT_MULTI_SYMBOL = 12408;
+static constexpr short PORT_MULTI_SYMBOL  = 12408;
+static constexpr short PORT_TICK_TO_TRADE = 12409;
 
 // Scenario 1: limit order send rate (no matches)
 static void BM_EndToEnd_LimitFlood(benchmark::State& state)
@@ -376,5 +377,90 @@ static void BM_EndToEnd_MultiSymbol(benchmark::State& state)
   state.SetItemsProcessed(state.iterations() * symbols.size());
 }
 BENCHMARK(BM_EndToEnd_MultiSymbol)->Iterations(5000);
+
+// Tick-to-trade: time from fill receipt (the "tick") to order acknowledgment.
+// Models a market maker that re-quotes immediately on every fill.
+// Chain measured: aggressor send → match → fill delivered to passive → re-quote sent → ack received.
+static void BM_TickToTrade(benchmark::State& state)
+{
+  ServerFixture srv(PORT_TICK_TO_TRADE);
+
+  std::atomic<bool>            ack_received{false};
+  std::atomic<uint64_t>        uid{6'000'000};
+  std::atomic<fix::FixClient*> passive_ptr{nullptr};
+
+  // Passive client: receives fill (tick), immediately re-quotes.
+  // Fills are identified by "31=" (LastPx), which only appears in execution reports.
+  // Acks are identified by "39=0". Two separate ifs (not else-if) so both fire
+  // if a single ::read() returns multiple messages in one buffer.
+  auto passive = std::make_unique<fix::FixClient>(
+      "127.0.0.1", PORT_TICK_TO_TRADE,
+      [&](std::string_view msg)
+      {
+        if (msg.find("31=") != std::string_view::npos)
+        {
+          // Fill received — this is the tick. Re-quote immediately.
+          fix::FixClient* p = passive_ptr.load(std::memory_order_acquire);
+          if (p)
+            p->send(fix::FixMessageBuilder::limit<LOB::Side::SELL>(
+                uid.fetch_add(1, std::memory_order_relaxed), 1, 100, "MSFT"));
+        }
+        if (msg.find("39=0") != std::string_view::npos)
+        {
+          // Re-quote ack received — chain complete.
+          ack_received.store(true, std::memory_order_release);
+        }
+      });
+  passive_ptr.store(passive.get(), std::memory_order_release);
+
+  fix::FixClient active("127.0.0.1", PORT_TICK_TO_TRADE, [](std::string_view) {});
+
+  for (auto _ : state)
+  {
+    // Setup: place a resting sell (outside timed section).
+    state.PauseTiming();
+    ack_received.store(false, std::memory_order_relaxed);
+    passive->send(fix::FixMessageBuilder::limit<LOB::Side::SELL>(
+        uid.fetch_add(1, std::memory_order_relaxed), 1, 100, "MSFT"));
+    while (!ack_received.load(std::memory_order_acquire))
+      ;
+    ack_received.store(false, std::memory_order_relaxed);
+    state.ResumeTiming();
+
+    // Timed: aggressor crosses → passive gets fill → re-quotes → ack.
+    active.send(fix::FixMessageBuilder::market<LOB::Side::BUY>(
+        uid.fetch_add(1, std::memory_order_relaxed), 1, "MSFT"));
+
+    while (!ack_received.load(std::memory_order_acquire))
+      ;
+  }
+
+  state.SetItemsProcessed(state.iterations());
+}
+BENCHMARK(BM_TickToTrade)
+    ->Repetitions(200)
+    ->Iterations(20)
+    ->ReportAggregatesOnly(true)
+    ->ComputeStatistics("p50",
+                        [](const std::vector<double>& v)
+                        {
+                          auto c = v;
+                          std::sort(c.begin(), c.end());
+                          return c[c.size() * 50 / 100];
+                        })
+    ->ComputeStatistics("p99",
+                        [](const std::vector<double>& v)
+                        {
+                          auto c = v;
+                          std::sort(c.begin(), c.end());
+                          return c[c.size() * 99 / 100];
+                        })
+    ->ComputeStatistics("p999",
+                        [](const std::vector<double>& v)
+                        {
+                          auto c = v;
+                          std::sort(c.begin(), c.end());
+                          return c[c.size() * 999 / 1000];
+                        });
 
 BENCHMARK_MAIN();

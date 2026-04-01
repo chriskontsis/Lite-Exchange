@@ -111,7 +111,7 @@ class FixSession : public net::IoHandler
       loop_.mod(fd_, this, Watch::Read);
   }
 
-  int fd() const { return fd_; }
+  int fd() const override { return fd_; }
   LOB::SessionId sessionId() const { return session_id_; }
   bool isDisconnected() const { return disconnected_; }
   bool hasPendingWrite() const { return write_pending_.load(std::memory_order_acquire); }
