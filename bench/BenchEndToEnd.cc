@@ -379,7 +379,6 @@ static void BM_EndToEnd_MultiSymbol(benchmark::State& state)
 BENCHMARK(BM_EndToEnd_MultiSymbol)->Iterations(5000);
 
 // Tick-to-trade: time from fill receipt (the "tick") to order acknowledgment.
-// Models a market maker that re-quotes immediately on every fill.
 // Chain measured: aggressor send → match → fill delivered to passive → re-quote sent → ack received.
 static void BM_TickToTrade(benchmark::State& state)
 {

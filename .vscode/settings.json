@@ -89,6 +89,24 @@
         "cinttypes": "cpp",
         "__tree": "cpp"
     },
-    "cmake.sourceDirectory": "/Users/chriskontsis/Desktop/Lite-Exchange",
+    "cmake.sourceDirectory": "/home/ubuntu/Lite-Exchange/v2",
+
+    "editor.formatOnSave": true,
+    "editor.formatOnType": false,
+
+    "[cpp]": {
+        "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
+    },
+    "[c]": {
+        "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
+    },
+
+    "clangd.arguments": [
+        "--compile-commands-dir=/home/ubuntu/Lite-Exchange/v2/build",
+        "--clang-tidy",
+        "--header-insertion=never",
+        "--completion-style=detailed"
+    ],
+
     "folder-color.pathColors": []
 }

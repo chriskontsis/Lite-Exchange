@@ -62,6 +62,6 @@ AlignConsecutiveDeclarations:
 
 # Misc
 Cpp11BracedListStyle: true
-Standard: c++20
+Standard: c++23
 MaxEmptyLinesToKeep: 1
 KeepEmptyLinesAtTheStartOfBlocks: false
