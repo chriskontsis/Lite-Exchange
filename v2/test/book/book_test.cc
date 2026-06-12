@@ -1,10 +1,12 @@
 #include <gtest/gtest.h>
 
 #include "lx/book/order.hpp"
+#include "lx/book/order_book.hpp"
 #include "lx/book/pool.hpp"
 #include "lx/book/price_level.hpp"
 
 using namespace lx::book;
+using namespace lx::proto;
 
 TEST(Order, SizeIs32)
 {
@@ -111,4 +113,113 @@ TEST(PriceLevel, RemoveMiddle)
   EXPECT_EQ(level.total_qty, 40u);
   EXPECT_EQ(level.pop_front(pool.data()), a);
   EXPECT_EQ(level.pop_front(pool.data()), c);
+}
+
+static NewOrder make_order(uint64_t oid, int64_t price, uint32_t qty, Side side,
+                           TimeInForce tif = TimeInForce::GTC)
+{
+  NewOrder msg{};
+  msg.hdr = {sizeof(NewOrder), MsgType::NEW_ORDER, 0};
+  msg.order_id = oid;
+  msg.price = price;
+  msg.qty = qty;
+  msg.side = side;
+  msg.tif = tif;
+  return msg;
+}
+
+TEST(OrderBook, PassiveBuyPlaced)
+{
+  OrderBook<64, 1024> book{100, 1};
+  Fill                fills[16];
+  uint32_t            fc = 0;
+
+  EXPECT_NE(book.add_order(make_order(1, 105, 100, Side::BUY), fills, fc), NULL_IDX);
+  EXPECT_EQ(fc, 0u);
+  EXPECT_EQ(book.best_bid_price(), int64_t{105});
+  EXPECT_EQ(book.best_ask_price(), INT64_MAX);
+}
+
+TEST(OrderBook, PassiveSellPlaced)
+{
+  OrderBook<64, 1024> book{100, 1};
+  Fill                fills[16];
+  uint32_t            fc = 0;
+
+  EXPECT_NE(book.add_order(make_order(1, 105, 100, Side::SELL), fills, fc), NULL_IDX);
+  EXPECT_EQ(fc, 0u);
+  EXPECT_EQ(book.best_ask_price(), int64_t{105});
+  EXPECT_EQ(book.best_bid_price(), INT64_MAX);
+}
+
+TEST(OrderBook, FullMatch)
+{
+  OrderBook<64, 1024> book{100, 1};
+  Fill                fills[16];
+  uint32_t            fc = 0;
+  book.add_order(make_order(1, 105, 50, Side::SELL), fills, fc);
+
+  fc = 0;
+  uint32_t slot = book.add_order(make_order(2, 105, 50, Side::BUY), fills, fc);
+  EXPECT_EQ(slot, NULL_IDX);
+  EXPECT_EQ(fc, 1u);
+  EXPECT_EQ(fills[0].qty, uint32_t{50});
+  EXPECT_EQ(fills[0].aggressor_id, uint64_t{2});
+  EXPECT_EQ(fills[0].resting_id, uint64_t{1});
+  EXPECT_EQ(fills[0].price, int64_t{105});
+  EXPECT_EQ(book.best_ask_price(), INT64_MAX);
+}
+
+TEST(OrderBook, PartialMatch)
+{
+  OrderBook<64, 1024> book{100, 1};
+  Fill                fills[16];
+  uint32_t            fc = 0;
+  book.add_order(make_order(1, 105, 30, Side::SELL), fills, fc);
+
+  fc = 0;
+  uint32_t slot = book.add_order(make_order(2, 105, 50, Side::BUY), fills, fc);
+  EXPECT_NE(slot, NULL_IDX);
+  EXPECT_EQ(fc, 1u);
+  EXPECT_EQ(fills[0].qty, uint32_t{30});
+  EXPECT_EQ(book.best_bid_price(), int64_t{105});
+  EXPECT_EQ(book.best_ask_price(), INT64_MAX);
+}
+
+TEST(OrderBook, MultiLevelMatch)
+{
+  OrderBook<64, 1024> book{100, 1};
+  Fill                fills[16];
+  uint32_t            fc = 0;
+  book.add_order(make_order(1, 105, 20, Side::SELL), fills, fc);
+  book.add_order(make_order(2, 106, 30, Side::SELL), fills, fc);
+
+  fc = 0;
+  book.add_order(make_order(3, 106, 50, Side::BUY), fills, fc);
+  EXPECT_EQ(fc, 2u);
+  EXPECT_EQ(fills[0].qty, uint32_t{20});
+  EXPECT_EQ(fills[1].qty, uint32_t{30});
+  EXPECT_EQ(book.best_ask_price(), INT64_MAX);
+}
+
+TEST(OrderBook, CancelBid)
+{
+  OrderBook<64, 1024> book{100, 1};
+  Fill                fills[16];
+  uint32_t            fc = 0;
+  uint32_t            slot = book.add_order(make_order(1, 105, 100, Side::BUY), fills, fc);
+  EXPECT_NE(slot, NULL_IDX);
+  book.cancel_order(slot);
+  EXPECT_EQ(book.best_bid_price(), INT64_MIN);
+}
+
+TEST(OrderBook, IocKilled)
+{
+  OrderBook<64, 1024> book{100, 1};
+  Fill                fills[16];
+  uint32_t            fc = 0;
+  uint32_t slot = book.add_order(make_order(1, 105, 100, Side::BUY, TimeInForce::IOC), fills, fc);
+  EXPECT_EQ(slot, NULL_IDX);
+  EXPECT_EQ(fc, 0u);
+  EXPECT_EQ(book.best_bid_price(), INT64_MIN);
 }
