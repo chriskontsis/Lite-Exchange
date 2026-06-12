@@ -62,3 +62,6 @@ Testing/
 # SSH keys / secrets
 *.pem
 *.key
+
+# v2
+v2/docs
