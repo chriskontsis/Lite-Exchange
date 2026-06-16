@@ -149,7 +149,7 @@ TEST(OrderBook, PassiveSellPlaced)
   EXPECT_NE(book.add_order(make_order(1, 105, 100, Side::SELL), fills, fc), NULL_IDX);
   EXPECT_EQ(fc, 0u);
   EXPECT_EQ(book.best_ask_price(), int64_t{105});
-  EXPECT_EQ(book.best_bid_price(), INT64_MAX);
+  EXPECT_EQ(book.best_bid_price(), INT64_MIN);
 }
 
 TEST(OrderBook, FullMatch)

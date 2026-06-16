@@ -73,6 +73,41 @@ class OrderBook
     return NULL_IDX;
   }
 
+  void cancel_order(uint32_t slot)
+  {
+    Order&   o = pool_[slot];
+    uint32_t uidx = static_cast<uint32_t>(price_to_idx(o.price));
+
+    if (o.side == proto::Side::BUY)
+    {
+      bid_levels_[uidx].remove(slot, pool_.data());
+      if (bid_levels_[uidx].empty() && best_bid_idx_ == uidx)
+        best_bid_idx_ = find_best<proto::Side::BUY>(uidx > 0 ? uidx - 1 : NULL_IDX);
+    }
+    else
+    {
+      ask_levels_[uidx].remove(slot, pool_.data());
+      if (ask_levels_[uidx].empty() && best_ask_idx_ == uidx)
+        best_ask_idx_ = find_best<proto::Side::SELL>(uidx + 1);
+    }
+
+    pool_.free(slot);
+  }
+
+  int64_t best_bid_price() const
+  {
+    if (best_bid_idx_ == NULL_IDX)
+      return INT64_MIN;
+    return base_price_ + static_cast<int64_t>(best_bid_idx_) * tick_size_;
+  }
+
+  int64_t best_ask_price() const
+  {
+    if (best_ask_idx_ == NULL_IDX)
+      return INT64_MAX;
+    return base_price_ + static_cast<int64_t>(best_ask_idx_) * tick_size_;
+  }
+
  private:
   int64_t  base_price_;
   int64_t  tick_size_;
@@ -83,7 +118,7 @@ class OrderBook
   PriceLevel              ask_levels_[LADDER_SIZE];
   Pool<Order, MAX_ORDERS> pool_;
 
-  int price_to_idx(int64_t price) const
+  int32_t price_to_idx(int64_t price) const
   {
     return static_cast<int32_t>((price - base_price_) / tick_size_);
   }
