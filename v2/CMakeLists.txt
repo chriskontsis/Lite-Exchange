@@ -33,9 +33,9 @@ endif()
 
 # --- Dependencies (uncommented as phases land) ------------------------------
 find_package(GTest REQUIRED)
-# find_package(benchmark REQUIRED)           # Phase 4
-# find_package(PkgConfig REQUIRED)           # Phase 5
-# pkg_check_modules(URING REQUIRED liburing) # Phase 5
+# find_package(benchmark REQUIRED)           # Phase 7
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(URING REQUIRED liburing)
 
 # All headers live under v2/include; targets use lx/<module>/foo.hpp
 include_directories(include)
