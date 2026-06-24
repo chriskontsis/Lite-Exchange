@@ -6,6 +6,7 @@
 #include <thread>
 
 #include "lx/engine/shard.hpp"
+#include "lx/util/affinity.hpp"
 #include "lx/util/tsc.hpp"
 
 using Shard = lx::engine::Shard<65536, 2048, 4096>;
@@ -42,7 +43,13 @@ int main()
 
   Shard shard{900, 1};
 
-  std::thread shard_thread([&] { shard.run(); });
+  std::thread shard_thread(
+      [&]
+      {
+        lx::util::pin_current_thread(2);
+        shard.run();
+      });
+  lx::util::pin_current_thread(3);
 
   uint64_t hz = lx::util::tsc_hz();
   std::printf("TSC frequency: %.3f GHz\n", hz / 1e9);
@@ -57,12 +64,15 @@ int main()
   for (int i = 0; i < TOTAL; ++i)
   {
     // Place resting sell
-    while (!shard.inbound().push(make_sell(i)));
+    while (!shard.inbound().push(make_sell(i)))
+      ;
 
     // Stamp and send aggressor buy
     uint64_t t0 = lx::util::rdtscp();
-    while (!shard.inbound().push(make_buy(TOTAL + i)));
-    while (!shard.outbound().pop(fill));
+    while (!shard.inbound().push(make_buy(TOTAL + i)))
+      ;
+    while (!shard.outbound().pop(fill))
+      ;
     uint64_t t1 = lx::util::rdtscp();
 
     if (i >= WARMUP)

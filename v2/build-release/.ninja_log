@@ -35,3 +35,9 @@
 2334	3598	1782324214864971434	test/book/book_test	5815781a2f75bbb0
 3	1138	1782324429708574135	bench/CMakeFiles/latency_bench.dir/latency.cc.o	3809e0f112aa2a4e
 1138	1361	1782324429930383776	bench/latency_bench	ce80fbfa1ba5df9
+3	1119	1782329712300924794	bench/CMakeFiles/latency_bench.dir/latency.cc.o	3809e0f112aa2a4e
+1119	1348	1782329712529382581	bench/latency_bench	ce80fbfa1ba5df9
+18	1437	1782330179604371701	bench/CMakeFiles/latency_bench.dir/latency.cc.o	3809e0f112aa2a4e
+1437	1954	1782330180121341558	bench/latency_bench	ce80fbfa1ba5df9
+3	1131	1782330378971683107	bench/CMakeFiles/latency_bench.dir/latency.cc.o	3809e0f112aa2a4e
+1131	1358	1782330379198184293	bench/latency_bench	ce80fbfa1ba5df9
