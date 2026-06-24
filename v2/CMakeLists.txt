@@ -6,15 +6,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# Default to Debug when cmake is invoked without -DCMAKE_BUILD_TYPE
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
 endif()
 
 # --- Compiler flags ---------------------------------------------------------
 add_compile_options(-Wall -Wextra -Wpedantic -Werror)
-
-# Debug: AddressSanitizer + UBSanitizer; frame pointer for clean stack traces
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   add_compile_options(-fsanitize=address,undefined -fno-omit-frame-pointer -g)
   add_link_options(-fsanitize=address,undefined)
@@ -37,10 +34,9 @@ find_package(GTest REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(URING REQUIRED liburing)
 
-# All headers live under v2/include; targets use lx/<module>/foo.hpp
+
 include_directories(include)
 
 enable_testing()
 add_subdirectory(test)
-# add_subdirectory(bench)                    # Phase 4
-# add_subdirectory(apps)                     # Phase 7
+add_subdirectory(bench)                    # Phase 7
