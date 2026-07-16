@@ -23,7 +23,8 @@ class OrderBook
   }
 
   // Returns slot idx if order rests else NULLIDX if filled or error
-  uint32_t add_order(const proto::NewOrder& msg, proto::Fill* fills, uint32_t& fill_count)
+  uint32_t add_order(const proto::NewOrder& msg, proto::Fill* fills, uint32_t& fill_count,
+                     uint32_t max_fills)
   {
     int32_t  idx = price_to_idx(msg.price);
     uint32_t uidx = static_cast<uint32_t>(idx);
@@ -48,7 +49,7 @@ class OrderBook
 
     if (msg.side == proto::Side::BUY)
     {
-      match<proto::Side::BUY>(o, uidx, fills, fill_count);
+      match<proto::Side::BUY>(o, uidx, fills, fill_count, max_fills);
       if (o.qty > 0 && msg.tif != proto::TimeInForce::IOC)
       {
         bid_levels_[uidx].push_back(slot, pool_.data());
@@ -59,7 +60,7 @@ class OrderBook
     }
     else
     {
-      match<proto::Side::SELL>(o, uidx, fills, fill_count);
+      match<proto::Side::SELL>(o, uidx, fills, fill_count, max_fills);
       if (o.qty > 0 && msg.tif != proto::TimeInForce::IOC)
       {
         ask_levels_[uidx].push_back(slot, pool_.data());
@@ -149,7 +150,8 @@ class OrderBook
   }
 
   template <proto::Side Side>
-  void match(Order& aggressor, uint32_t agg_idx, proto::Fill* fills, uint32_t& fill_count)
+  void match(Order& aggressor, uint32_t agg_idx, proto::Fill* fills, uint32_t& fill_count,
+             uint32_t max_fills)
   {
     uint32_t&   best = (Side == proto::Side::BUY ? best_ask_idx_ : best_bid_idx_);
     PriceLevel* levels = (Side == proto::Side::BUY ? ask_levels_ : bid_levels_);
@@ -174,6 +176,8 @@ class OrderBook
         Order&   resting = pool_[rslot];
         uint32_t fill_qty = std::min(aggressor.qty, resting.qty);
 
+        if (fill_count >= max_fills)
+          return;
         fills[fill_count++] = proto::Fill{{sizeof(proto::Fill), proto::MsgType::FILL, 0},
                                           fill_qty,
                                           aggressor.order_id,

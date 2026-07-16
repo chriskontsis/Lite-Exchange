@@ -26,7 +26,7 @@ class SpscQueue
   }
   bool pop(T& val)
   {
-    const std::size_t tail = tail_.value.load(std::memory_order_release);
+    const std::size_t tail = tail_.value.load(std::memory_order_acquire);
     if (head_.value.load(std::memory_order_acquire) == tail)
       return false;
     val = slots_[tail & kMask];

@@ -161,8 +161,6 @@ build test/CMakeFiles/smoke_test.dir/smoke_test.cc.o: CXX_COMPILER__smoke_test_u
   INCLUDES = -I/home/ubuntu/Lite-Exchange/v2/include
   OBJECT_DIR = test/CMakeFiles/smoke_test.dir
   OBJECT_FILE_DIR = test/CMakeFiles/smoke_test.dir
-  TARGET_COMPILE_PDB = test/CMakeFiles/smoke_test.dir/
-  TARGET_PDB = test/smoke_test.pdb
 
 
 # =============================================================================
@@ -178,9 +176,8 @@ build test/smoke_test: CXX_EXECUTABLE_LINKER__smoke_test_Release test/CMakeFiles
   OBJECT_DIR = test/CMakeFiles/smoke_test.dir
   POST_BUILD = :
   PRE_LINK = :
-  TARGET_COMPILE_PDB = test/CMakeFiles/smoke_test.dir/
   TARGET_FILE = test/smoke_test
-  TARGET_PDB = test/smoke_test.pdb
+  TARGET_PDB = smoke_test.dbg
 
 
 #############################################
@@ -303,8 +300,6 @@ build test/util/CMakeFiles/cache_test.dir/cache_test.cc.o: CXX_COMPILER__cache_t
   INCLUDES = -I/home/ubuntu/Lite-Exchange/v2/include
   OBJECT_DIR = test/util/CMakeFiles/cache_test.dir
   OBJECT_FILE_DIR = test/util/CMakeFiles/cache_test.dir
-  TARGET_COMPILE_PDB = test/util/CMakeFiles/cache_test.dir/
-  TARGET_PDB = test/util/cache_test.pdb
 
 
 # =============================================================================
@@ -320,9 +315,41 @@ build test/util/cache_test: CXX_EXECUTABLE_LINKER__cache_test_Release test/util/
   OBJECT_DIR = test/util/CMakeFiles/cache_test.dir
   POST_BUILD = :
   PRE_LINK = :
-  TARGET_COMPILE_PDB = test/util/CMakeFiles/cache_test.dir/
   TARGET_FILE = test/util/cache_test
-  TARGET_PDB = test/util/cache_test.pdb
+  TARGET_PDB = cache_test.dbg
+
+# =============================================================================
+# Object build statements for EXECUTABLE target huge_page_test
+
+
+#############################################
+# Order-only phony target for huge_page_test
+
+build cmake_object_order_depends_target_huge_page_test: phony || test/util/CMakeFiles/huge_page_test.dir
+
+build test/util/CMakeFiles/huge_page_test.dir/huge_page_test.cc.o: CXX_COMPILER__huge_page_test_unscanned_Release /home/ubuntu/Lite-Exchange/v2/test/util/huge_page_test.cc || cmake_object_order_depends_target_huge_page_test
+  DEP_FILE = test/util/CMakeFiles/huge_page_test.dir/huge_page_test.cc.o.d
+  FLAGS = -O3 -DNDEBUG -std=c++23 -flto=auto -fno-fat-lto-objects -Wall -Wextra -Wpedantic -Werror -O3 -march=native -fno-plt -DGTEST_HAS_PTHREAD=1
+  INCLUDES = -I/home/ubuntu/Lite-Exchange/v2/include
+  OBJECT_DIR = test/util/CMakeFiles/huge_page_test.dir
+  OBJECT_FILE_DIR = test/util/CMakeFiles/huge_page_test.dir
+
+
+# =============================================================================
+# Link build statements for EXECUTABLE target huge_page_test
+
+
+#############################################
+# Link the executable test/util/huge_page_test
+
+build test/util/huge_page_test: CXX_EXECUTABLE_LINKER__huge_page_test_Release test/util/CMakeFiles/huge_page_test.dir/huge_page_test.cc.o | /usr/lib/x86_64-linux-gnu/libgtest_main.a /usr/lib/x86_64-linux-gnu/libgtest.a
+  FLAGS = -O3 -DNDEBUG -flto=auto -fno-fat-lto-objects
+  LINK_LIBRARIES = /usr/lib/x86_64-linux-gnu/libgtest_main.a  -llx_includes  /usr/lib/x86_64-linux-gnu/libgtest.a
+  OBJECT_DIR = test/util/CMakeFiles/huge_page_test.dir
+  POST_BUILD = :
+  PRE_LINK = :
+  TARGET_FILE = test/util/huge_page_test
+  TARGET_PDB = huge_page_test.dbg
 
 
 #############################################
@@ -445,8 +472,6 @@ build test/queue/CMakeFiles/spsc_test.dir/spsc_test.cc.o: CXX_COMPILER__spsc_tes
   INCLUDES = -I/home/ubuntu/Lite-Exchange/v2/include
   OBJECT_DIR = test/queue/CMakeFiles/spsc_test.dir
   OBJECT_FILE_DIR = test/queue/CMakeFiles/spsc_test.dir
-  TARGET_COMPILE_PDB = test/queue/CMakeFiles/spsc_test.dir/
-  TARGET_PDB = test/queue/spsc_test.pdb
 
 
 # =============================================================================
@@ -462,9 +487,8 @@ build test/queue/spsc_test: CXX_EXECUTABLE_LINKER__spsc_test_Release test/queue/
   OBJECT_DIR = test/queue/CMakeFiles/spsc_test.dir
   POST_BUILD = :
   PRE_LINK = :
-  TARGET_COMPILE_PDB = test/queue/CMakeFiles/spsc_test.dir/
   TARGET_FILE = test/queue/spsc_test
-  TARGET_PDB = test/queue/spsc_test.pdb
+  TARGET_PDB = spsc_test.dbg
 
 
 #############################################
@@ -587,8 +611,6 @@ build test/proto/CMakeFiles/proto_test.dir/proto_test.cc.o: CXX_COMPILER__proto_
   INCLUDES = -I/home/ubuntu/Lite-Exchange/v2/include
   OBJECT_DIR = test/proto/CMakeFiles/proto_test.dir
   OBJECT_FILE_DIR = test/proto/CMakeFiles/proto_test.dir
-  TARGET_COMPILE_PDB = test/proto/CMakeFiles/proto_test.dir/
-  TARGET_PDB = test/proto/proto_test.pdb
 
 
 # =============================================================================
@@ -604,9 +626,8 @@ build test/proto/proto_test: CXX_EXECUTABLE_LINKER__proto_test_Release test/prot
   OBJECT_DIR = test/proto/CMakeFiles/proto_test.dir
   POST_BUILD = :
   PRE_LINK = :
-  TARGET_COMPILE_PDB = test/proto/CMakeFiles/proto_test.dir/
   TARGET_FILE = test/proto/proto_test
-  TARGET_PDB = test/proto/proto_test.pdb
+  TARGET_PDB = proto_test.dbg
 
 
 #############################################
@@ -729,8 +750,6 @@ build test/book/CMakeFiles/book_test.dir/book_test.cc.o: CXX_COMPILER__book_test
   INCLUDES = -I/home/ubuntu/Lite-Exchange/v2/include
   OBJECT_DIR = test/book/CMakeFiles/book_test.dir
   OBJECT_FILE_DIR = test/book/CMakeFiles/book_test.dir
-  TARGET_COMPILE_PDB = test/book/CMakeFiles/book_test.dir/
-  TARGET_PDB = test/book/book_test.pdb
 
 
 # =============================================================================
@@ -746,9 +765,8 @@ build test/book/book_test: CXX_EXECUTABLE_LINKER__book_test_Release test/book/CM
   OBJECT_DIR = test/book/CMakeFiles/book_test.dir
   POST_BUILD = :
   PRE_LINK = :
-  TARGET_COMPILE_PDB = test/book/CMakeFiles/book_test.dir/
   TARGET_FILE = test/book/book_test
-  TARGET_PDB = test/book/book_test.pdb
+  TARGET_PDB = book_test.dbg
 
 
 #############################################
@@ -871,8 +889,6 @@ build test/net/CMakeFiles/net_test.dir/net_test.cc.o: CXX_COMPILER__net_test_uns
   INCLUDES = -I/home/ubuntu/Lite-Exchange/v2/include
   OBJECT_DIR = test/net/CMakeFiles/net_test.dir
   OBJECT_FILE_DIR = test/net/CMakeFiles/net_test.dir
-  TARGET_COMPILE_PDB = test/net/CMakeFiles/net_test.dir/
-  TARGET_PDB = test/net/net_test.pdb
 
 
 # =============================================================================
@@ -888,9 +904,8 @@ build test/net/net_test: CXX_EXECUTABLE_LINKER__net_test_Release test/net/CMakeF
   OBJECT_DIR = test/net/CMakeFiles/net_test.dir
   POST_BUILD = :
   PRE_LINK = :
-  TARGET_COMPILE_PDB = test/net/CMakeFiles/net_test.dir/
   TARGET_FILE = test/net/net_test
-  TARGET_PDB = test/net/net_test.pdb
+  TARGET_PDB = net_test.dbg
 
 
 #############################################
@@ -1013,8 +1028,6 @@ build test/engine/CMakeFiles/engine_test.dir/engine_test.cc.o: CXX_COMPILER__eng
   INCLUDES = -I/home/ubuntu/Lite-Exchange/v2/include
   OBJECT_DIR = test/engine/CMakeFiles/engine_test.dir
   OBJECT_FILE_DIR = test/engine/CMakeFiles/engine_test.dir
-  TARGET_COMPILE_PDB = test/engine/CMakeFiles/engine_test.dir/
-  TARGET_PDB = test/engine/engine_test.pdb
 
 
 # =============================================================================
@@ -1030,9 +1043,8 @@ build test/engine/engine_test: CXX_EXECUTABLE_LINKER__engine_test_Release test/e
   OBJECT_DIR = test/engine/CMakeFiles/engine_test.dir
   POST_BUILD = :
   PRE_LINK = :
-  TARGET_COMPILE_PDB = test/engine/CMakeFiles/engine_test.dir/
   TARGET_FILE = test/engine/engine_test
-  TARGET_PDB = test/engine/engine_test.pdb
+  TARGET_PDB = engine_test.dbg
 
 
 #############################################
@@ -1155,8 +1167,6 @@ build bench/CMakeFiles/latency_bench.dir/latency.cc.o: CXX_COMPILER__latency_ben
   INCLUDES = -I/home/ubuntu/Lite-Exchange/v2/include -I/home/ubuntu/Lite-Exchange/v2/build-release/_deps/hdr_histogram-src/include
   OBJECT_DIR = bench/CMakeFiles/latency_bench.dir
   OBJECT_FILE_DIR = bench/CMakeFiles/latency_bench.dir
-  TARGET_COMPILE_PDB = bench/CMakeFiles/latency_bench.dir/
-  TARGET_PDB = bench/latency_bench.pdb
 
 
 # =============================================================================
@@ -1172,9 +1182,8 @@ build bench/latency_bench: CXX_EXECUTABLE_LINKER__latency_bench_Release bench/CM
   OBJECT_DIR = bench/CMakeFiles/latency_bench.dir
   POST_BUILD = :
   PRE_LINK = :
-  TARGET_COMPILE_PDB = bench/CMakeFiles/latency_bench.dir/
   TARGET_FILE = bench/latency_bench
-  TARGET_PDB = bench/latency_bench.pdb
+  TARGET_PDB = latency_bench.dbg
 
 
 #############################################
@@ -1510,8 +1519,6 @@ build _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram.dir/hdr_encoding.c.
   INCLUDES = -I/home/ubuntu/Lite-Exchange/v2/include -I/home/ubuntu/Lite-Exchange/v2/build-release/_deps/hdr_histogram-src/include
   OBJECT_DIR = _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram.dir
   OBJECT_FILE_DIR = _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram.dir
-  TARGET_COMPILE_PDB = _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram.dir/
-  TARGET_PDB = _deps/hdr_histogram-build/src/libhdr_histogram.pdb
 
 build _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram.dir/hdr_histogram.c.o: C_COMPILER__hdr_histogram_unscanned_Release /home/ubuntu/Lite-Exchange/v2/build-release/_deps/hdr_histogram-src/src/hdr_histogram.c || cmake_object_order_depends_target_hdr_histogram
   DEFINES = -D_GNU_SOURCE -Dhdr_histogram_EXPORTS
@@ -1520,8 +1527,6 @@ build _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram.dir/hdr_histogram.c
   INCLUDES = -I/home/ubuntu/Lite-Exchange/v2/include -I/home/ubuntu/Lite-Exchange/v2/build-release/_deps/hdr_histogram-src/include
   OBJECT_DIR = _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram.dir
   OBJECT_FILE_DIR = _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram.dir
-  TARGET_COMPILE_PDB = _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram.dir/
-  TARGET_PDB = _deps/hdr_histogram-build/src/libhdr_histogram.pdb
 
 build _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram.dir/hdr_histogram_log_no_op.c.o: C_COMPILER__hdr_histogram_unscanned_Release /home/ubuntu/Lite-Exchange/v2/build-release/_deps/hdr_histogram-src/src/hdr_histogram_log_no_op.c || cmake_object_order_depends_target_hdr_histogram
   DEFINES = -D_GNU_SOURCE -Dhdr_histogram_EXPORTS
@@ -1530,8 +1535,6 @@ build _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram.dir/hdr_histogram_l
   INCLUDES = -I/home/ubuntu/Lite-Exchange/v2/include -I/home/ubuntu/Lite-Exchange/v2/build-release/_deps/hdr_histogram-src/include
   OBJECT_DIR = _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram.dir
   OBJECT_FILE_DIR = _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram.dir
-  TARGET_COMPILE_PDB = _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram.dir/
-  TARGET_PDB = _deps/hdr_histogram-build/src/libhdr_histogram.pdb
 
 build _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram.dir/hdr_interval_recorder.c.o: C_COMPILER__hdr_histogram_unscanned_Release /home/ubuntu/Lite-Exchange/v2/build-release/_deps/hdr_histogram-src/src/hdr_interval_recorder.c || cmake_object_order_depends_target_hdr_histogram
   DEFINES = -D_GNU_SOURCE -Dhdr_histogram_EXPORTS
@@ -1540,8 +1543,6 @@ build _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram.dir/hdr_interval_re
   INCLUDES = -I/home/ubuntu/Lite-Exchange/v2/include -I/home/ubuntu/Lite-Exchange/v2/build-release/_deps/hdr_histogram-src/include
   OBJECT_DIR = _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram.dir
   OBJECT_FILE_DIR = _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram.dir
-  TARGET_COMPILE_PDB = _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram.dir/
-  TARGET_PDB = _deps/hdr_histogram-build/src/libhdr_histogram.pdb
 
 build _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram.dir/hdr_thread.c.o: C_COMPILER__hdr_histogram_unscanned_Release /home/ubuntu/Lite-Exchange/v2/build-release/_deps/hdr_histogram-src/src/hdr_thread.c || cmake_object_order_depends_target_hdr_histogram
   DEFINES = -D_GNU_SOURCE -Dhdr_histogram_EXPORTS
@@ -1550,8 +1551,6 @@ build _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram.dir/hdr_thread.c.o:
   INCLUDES = -I/home/ubuntu/Lite-Exchange/v2/include -I/home/ubuntu/Lite-Exchange/v2/build-release/_deps/hdr_histogram-src/include
   OBJECT_DIR = _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram.dir
   OBJECT_FILE_DIR = _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram.dir
-  TARGET_COMPILE_PDB = _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram.dir/
-  TARGET_PDB = _deps/hdr_histogram-build/src/libhdr_histogram.pdb
 
 build _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram.dir/hdr_time.c.o: C_COMPILER__hdr_histogram_unscanned_Release /home/ubuntu/Lite-Exchange/v2/build-release/_deps/hdr_histogram-src/src/hdr_time.c || cmake_object_order_depends_target_hdr_histogram
   DEFINES = -D_GNU_SOURCE -Dhdr_histogram_EXPORTS
@@ -1560,8 +1559,6 @@ build _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram.dir/hdr_time.c.o: C
   INCLUDES = -I/home/ubuntu/Lite-Exchange/v2/include -I/home/ubuntu/Lite-Exchange/v2/build-release/_deps/hdr_histogram-src/include
   OBJECT_DIR = _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram.dir
   OBJECT_FILE_DIR = _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram.dir
-  TARGET_COMPILE_PDB = _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram.dir/
-  TARGET_PDB = _deps/hdr_histogram-build/src/libhdr_histogram.pdb
 
 build _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram.dir/hdr_writer_reader_phaser.c.o: C_COMPILER__hdr_histogram_unscanned_Release /home/ubuntu/Lite-Exchange/v2/build-release/_deps/hdr_histogram-src/src/hdr_writer_reader_phaser.c || cmake_object_order_depends_target_hdr_histogram
   DEFINES = -D_GNU_SOURCE -Dhdr_histogram_EXPORTS
@@ -1570,8 +1567,6 @@ build _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram.dir/hdr_writer_read
   INCLUDES = -I/home/ubuntu/Lite-Exchange/v2/include -I/home/ubuntu/Lite-Exchange/v2/build-release/_deps/hdr_histogram-src/include
   OBJECT_DIR = _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram.dir
   OBJECT_FILE_DIR = _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram.dir
-  TARGET_COMPILE_PDB = _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram.dir/
-  TARGET_PDB = _deps/hdr_histogram-build/src/libhdr_histogram.pdb
 
 
 # =============================================================================
@@ -1589,10 +1584,9 @@ build _deps/hdr_histogram-build/src/libhdr_histogram.so.6.1.3: C_SHARED_LIBRARY_
   PRE_LINK = :
   SONAME = libhdr_histogram.so.6
   SONAME_FLAG = -Wl,-soname,
-  TARGET_COMPILE_PDB = _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram.dir/
   TARGET_FILE = _deps/hdr_histogram-build/src/libhdr_histogram.so.6.1.3
   TARGET_IMPLIB = _deps/hdr_histogram-build/src/
-  TARGET_PDB = _deps/hdr_histogram-build/src/libhdr_histogram.pdb
+  TARGET_PDB = hdr_histogram.so.dbg
 
 
 #############################################
@@ -1617,8 +1611,6 @@ build _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram_static.dir/hdr_enco
   INCLUDES = -I/home/ubuntu/Lite-Exchange/v2/include -I/home/ubuntu/Lite-Exchange/v2/build-release/_deps/hdr_histogram-src/include
   OBJECT_DIR = _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram_static.dir
   OBJECT_FILE_DIR = _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram_static.dir
-  TARGET_COMPILE_PDB = _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram_static.dir/hdr_histogram_static.pdb
-  TARGET_PDB = _deps/hdr_histogram-build/src/libhdr_histogram_static.pdb
 
 build _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram_static.dir/hdr_histogram.c.o: C_COMPILER__hdr_histogram_static_unscanned_Release /home/ubuntu/Lite-Exchange/v2/build-release/_deps/hdr_histogram-src/src/hdr_histogram.c || cmake_object_order_depends_target_hdr_histogram_static
   DEFINES = -D_GNU_SOURCE
@@ -1627,8 +1619,6 @@ build _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram_static.dir/hdr_hist
   INCLUDES = -I/home/ubuntu/Lite-Exchange/v2/include -I/home/ubuntu/Lite-Exchange/v2/build-release/_deps/hdr_histogram-src/include
   OBJECT_DIR = _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram_static.dir
   OBJECT_FILE_DIR = _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram_static.dir
-  TARGET_COMPILE_PDB = _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram_static.dir/hdr_histogram_static.pdb
-  TARGET_PDB = _deps/hdr_histogram-build/src/libhdr_histogram_static.pdb
 
 build _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram_static.dir/hdr_histogram_log_no_op.c.o: C_COMPILER__hdr_histogram_static_unscanned_Release /home/ubuntu/Lite-Exchange/v2/build-release/_deps/hdr_histogram-src/src/hdr_histogram_log_no_op.c || cmake_object_order_depends_target_hdr_histogram_static
   DEFINES = -D_GNU_SOURCE
@@ -1637,8 +1627,6 @@ build _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram_static.dir/hdr_hist
   INCLUDES = -I/home/ubuntu/Lite-Exchange/v2/include -I/home/ubuntu/Lite-Exchange/v2/build-release/_deps/hdr_histogram-src/include
   OBJECT_DIR = _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram_static.dir
   OBJECT_FILE_DIR = _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram_static.dir
-  TARGET_COMPILE_PDB = _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram_static.dir/hdr_histogram_static.pdb
-  TARGET_PDB = _deps/hdr_histogram-build/src/libhdr_histogram_static.pdb
 
 build _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram_static.dir/hdr_interval_recorder.c.o: C_COMPILER__hdr_histogram_static_unscanned_Release /home/ubuntu/Lite-Exchange/v2/build-release/_deps/hdr_histogram-src/src/hdr_interval_recorder.c || cmake_object_order_depends_target_hdr_histogram_static
   DEFINES = -D_GNU_SOURCE
@@ -1647,8 +1635,6 @@ build _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram_static.dir/hdr_inte
   INCLUDES = -I/home/ubuntu/Lite-Exchange/v2/include -I/home/ubuntu/Lite-Exchange/v2/build-release/_deps/hdr_histogram-src/include
   OBJECT_DIR = _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram_static.dir
   OBJECT_FILE_DIR = _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram_static.dir
-  TARGET_COMPILE_PDB = _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram_static.dir/hdr_histogram_static.pdb
-  TARGET_PDB = _deps/hdr_histogram-build/src/libhdr_histogram_static.pdb
 
 build _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram_static.dir/hdr_thread.c.o: C_COMPILER__hdr_histogram_static_unscanned_Release /home/ubuntu/Lite-Exchange/v2/build-release/_deps/hdr_histogram-src/src/hdr_thread.c || cmake_object_order_depends_target_hdr_histogram_static
   DEFINES = -D_GNU_SOURCE
@@ -1657,8 +1643,6 @@ build _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram_static.dir/hdr_thre
   INCLUDES = -I/home/ubuntu/Lite-Exchange/v2/include -I/home/ubuntu/Lite-Exchange/v2/build-release/_deps/hdr_histogram-src/include
   OBJECT_DIR = _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram_static.dir
   OBJECT_FILE_DIR = _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram_static.dir
-  TARGET_COMPILE_PDB = _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram_static.dir/hdr_histogram_static.pdb
-  TARGET_PDB = _deps/hdr_histogram-build/src/libhdr_histogram_static.pdb
 
 build _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram_static.dir/hdr_time.c.o: C_COMPILER__hdr_histogram_static_unscanned_Release /home/ubuntu/Lite-Exchange/v2/build-release/_deps/hdr_histogram-src/src/hdr_time.c || cmake_object_order_depends_target_hdr_histogram_static
   DEFINES = -D_GNU_SOURCE
@@ -1667,8 +1651,6 @@ build _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram_static.dir/hdr_time
   INCLUDES = -I/home/ubuntu/Lite-Exchange/v2/include -I/home/ubuntu/Lite-Exchange/v2/build-release/_deps/hdr_histogram-src/include
   OBJECT_DIR = _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram_static.dir
   OBJECT_FILE_DIR = _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram_static.dir
-  TARGET_COMPILE_PDB = _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram_static.dir/hdr_histogram_static.pdb
-  TARGET_PDB = _deps/hdr_histogram-build/src/libhdr_histogram_static.pdb
 
 build _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram_static.dir/hdr_writer_reader_phaser.c.o: C_COMPILER__hdr_histogram_static_unscanned_Release /home/ubuntu/Lite-Exchange/v2/build-release/_deps/hdr_histogram-src/src/hdr_writer_reader_phaser.c || cmake_object_order_depends_target_hdr_histogram_static
   DEFINES = -D_GNU_SOURCE
@@ -1677,8 +1659,6 @@ build _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram_static.dir/hdr_writ
   INCLUDES = -I/home/ubuntu/Lite-Exchange/v2/include -I/home/ubuntu/Lite-Exchange/v2/build-release/_deps/hdr_histogram-src/include
   OBJECT_DIR = _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram_static.dir
   OBJECT_FILE_DIR = _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram_static.dir
-  TARGET_COMPILE_PDB = _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram_static.dir/hdr_histogram_static.pdb
-  TARGET_PDB = _deps/hdr_histogram-build/src/libhdr_histogram_static.pdb
 
 
 # =============================================================================
@@ -1693,9 +1673,8 @@ build _deps/hdr_histogram-build/src/libhdr_histogram_static.a: C_STATIC_LIBRARY_
   OBJECT_DIR = _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram_static.dir
   POST_BUILD = :
   PRE_LINK = :
-  TARGET_COMPILE_PDB = _deps/hdr_histogram-build/src/CMakeFiles/hdr_histogram_static.dir/hdr_histogram_static.pdb
   TARGET_FILE = _deps/hdr_histogram-build/src/libhdr_histogram_static.a
-  TARGET_PDB = _deps/hdr_histogram-build/src/libhdr_histogram_static.pdb
+  TARGET_PDB = hdr_histogram_static.a.dbg
 
 
 #############################################
@@ -1811,6 +1790,8 @@ build hdr_histogram: phony _deps/hdr_histogram-build/src/libhdr_histogram.so
 
 build hdr_histogram_static: phony _deps/hdr_histogram-build/src/libhdr_histogram_static.a
 
+build huge_page_test: phony test/util/huge_page_test
+
 build latency_bench: phony bench/latency_bench
 
 build libhdr_histogram.so: phony _deps/hdr_histogram-build/src/libhdr_histogram.so
@@ -1910,7 +1891,7 @@ build test/queue/all: phony test/queue/spsc_test
 #############################################
 # Folder: /home/ubuntu/Lite-Exchange/v2/build-release/test/util
 
-build test/util/all: phony test/util/cache_test
+build test/util/all: phony test/util/cache_test test/util/huge_page_test
 
 # =============================================================================
 # Built-in targets
@@ -1919,14 +1900,14 @@ build test/util/all: phony test/util/cache_test
 #############################################
 # Re-run CMake if any of its inputs changed.
 
-build build.ninja: RERUN_CMAKE | /home/ubuntu/Lite-Exchange/v2/CMakeLists.txt /home/ubuntu/Lite-Exchange/v2/bench/CMakeLists.txt /home/ubuntu/Lite-Exchange/v2/test/CMakeLists.txt /home/ubuntu/Lite-Exchange/v2/test/book/CMakeLists.txt /home/ubuntu/Lite-Exchange/v2/test/engine/CMakeLists.txt /home/ubuntu/Lite-Exchange/v2/test/net/CMakeLists.txt /home/ubuntu/Lite-Exchange/v2/test/proto/CMakeLists.txt /home/ubuntu/Lite-Exchange/v2/test/queue/CMakeLists.txt /home/ubuntu/Lite-Exchange/v2/test/util/CMakeLists.txt /usr/lib/x86_64-linux-gnu/cmake/GTest/GTestConfig.cmake /usr/lib/x86_64-linux-gnu/cmake/GTest/GTestConfigVersion.cmake /usr/lib/x86_64-linux-gnu/cmake/GTest/GTestTargets-none.cmake /usr/lib/x86_64-linux-gnu/cmake/GTest/GTestTargets.cmake /usr/share/cmake-3.28/Modules/BasicConfigVersion-AnyNewerVersion.cmake.in /usr/share/cmake-3.28/Modules/CMakeCCompiler.cmake.in /usr/share/cmake-3.28/Modules/CMakeCCompilerABI.c /usr/share/cmake-3.28/Modules/CMakeCInformation.cmake /usr/share/cmake-3.28/Modules/CMakeCXXCompiler.cmake.in /usr/share/cmake-3.28/Modules/CMakeCXXCompilerABI.cpp /usr/share/cmake-3.28/Modules/CMakeCXXInformation.cmake /usr/share/cmake-3.28/Modules/CMakeCommonLanguageInclude.cmake /usr/share/cmake-3.28/Modules/CMakeCompilerIdDetection.cmake /usr/share/cmake-3.28/Modules/CMakeDetermineCCompiler.cmake /usr/share/cmake-3.28/Modules/CMakeDetermineCXXCompiler.cmake /usr/share/cmake-3.28/Modules/CMakeDetermineCompileFeatures.cmake /usr/share/cmake-3.28/Modules/CMakeDetermineCompiler.cmake /usr/share/cmake-3.28/Modules/CMakeDetermineCompilerABI.cmake /usr/share/cmake-3.28/Modules/CMakeDetermineCompilerId.cmake /usr/share/cmake-3.28/Modules/CMakeDetermineSystem.cmake /usr/share/cmake-3.28/Modules/CMakeFindBinUtils.cmake /usr/share/cmake-3.28/Modules/CMakeFindDependencyMacro.cmake /usr/share/cmake-3.28/Modules/CMakeGenericSystem.cmake /usr/share/cmake-3.28/Modules/CMakeInitializeConfigs.cmake /usr/share/cmake-3.28/Modules/CMakeLanguageInformation.cmake /usr/share/cmake-3.28/Modules/CMakeNinjaFindMake.cmake /usr/share/cmake-3.28/Modules/CMakePackageConfigHelpers.cmake /usr/share/cmake-3.28/Modules/CMakeParseImplicitIncludeInfo.cmake /usr/share/cmake-3.28/Modules/CMakeParseImplicitLinkInfo.cmake /usr/share/cmake-3.28/Modules/CMakeParseLibraryArchitecture.cmake /usr/share/cmake-3.28/Modules/CMakeSystem.cmake.in /usr/share/cmake-3.28/Modules/CMakeSystemSpecificInformation.cmake /usr/share/cmake-3.28/Modules/CMakeSystemSpecificInitialize.cmake /usr/share/cmake-3.28/Modules/CMakeTestCCompiler.cmake /usr/share/cmake-3.28/Modules/CMakeTestCXXCompiler.cmake /usr/share/cmake-3.28/Modules/CMakeTestCompilerCommon.cmake /usr/share/cmake-3.28/Modules/CPack.cmake /usr/share/cmake-3.28/Modules/CPackComponent.cmake /usr/share/cmake-3.28/Modules/CheckCSourceCompiles.cmake /usr/share/cmake-3.28/Modules/CheckCXXSourceCompiles.cmake /usr/share/cmake-3.28/Modules/CheckIncludeFile.cmake /usr/share/cmake-3.28/Modules/CheckIncludeFileCXX.cmake /usr/share/cmake-3.28/Modules/CheckLibraryExists.cmake /usr/share/cmake-3.28/Modules/Compiler/ADSP-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/ARMCC-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/ARMClang-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/AppleClang-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/Borland-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/Bruce-C-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/CMakeCommonCompilerMacros.cmake /usr/share/cmake-3.28/Modules/Compiler/Clang-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/Clang-DetermineCompilerInternal.cmake /usr/share/cmake-3.28/Modules/Compiler/Comeau-CXX-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/Compaq-C-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/Compaq-CXX-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/Cray-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/CrayClang-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/Embarcadero-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/Fujitsu-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/FujitsuClang-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/GHS-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/GNU-C-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/GNU-C.cmake /usr/share/cmake-3.28/Modules/Compiler/GNU-CXX-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/GNU-CXX.cmake /usr/share/cmake-3.28/Modules/Compiler/GNU-FindBinUtils.cmake /usr/share/cmake-3.28/Modules/Compiler/GNU.cmake /usr/share/cmake-3.28/Modules/Compiler/HP-C-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/HP-CXX-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/IAR-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/IBMCPP-C-DetermineVersionInternal.cmake /usr/share/cmake-3.28/Modules/Compiler/IBMCPP-CXX-DetermineVersionInternal.cmake /usr/share/cmake-3.28/Modules/Compiler/IBMClang-C-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/IBMClang-CXX-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/Intel-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/IntelLLVM-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/LCC-C-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/LCC-CXX-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/MSVC-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/NVHPC-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/NVIDIA-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/OpenWatcom-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/OrangeC-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/PGI-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/PathScale-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/SCO-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/SDCC-C-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/SunPro-C-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/SunPro-CXX-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/TI-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/Tasking-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/TinyCC-C-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/VisualAge-C-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/VisualAge-CXX-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/Watcom-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/XL-C-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/XL-CXX-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/XLClang-C-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/XLClang-CXX-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/zOS-C-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/zOS-CXX-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/ExternalProject/shared_internal_commands.cmake /usr/share/cmake-3.28/Modules/FetchContent.cmake /usr/share/cmake-3.28/Modules/FetchContent/CMakeLists.cmake.in /usr/share/cmake-3.28/Modules/FindGTest.cmake /usr/share/cmake-3.28/Modules/FindGit.cmake /usr/share/cmake-3.28/Modules/FindPackageHandleStandardArgs.cmake /usr/share/cmake-3.28/Modules/FindPackageMessage.cmake /usr/share/cmake-3.28/Modules/FindPkgConfig.cmake /usr/share/cmake-3.28/Modules/FindThreads.cmake /usr/share/cmake-3.28/Modules/FindZLIB.cmake /usr/share/cmake-3.28/Modules/GNUInstallDirs.cmake /usr/share/cmake-3.28/Modules/GoogleTest.cmake /usr/share/cmake-3.28/Modules/Internal/CheckSourceCompiles.cmake /usr/share/cmake-3.28/Modules/Internal/FeatureTesting.cmake /usr/share/cmake-3.28/Modules/Platform/Linux-Determine-CXX.cmake /usr/share/cmake-3.28/Modules/Platform/Linux-GNU-C.cmake /usr/share/cmake-3.28/Modules/Platform/Linux-GNU-CXX.cmake /usr/share/cmake-3.28/Modules/Platform/Linux-GNU.cmake /usr/share/cmake-3.28/Modules/Platform/Linux-Initialize.cmake /usr/share/cmake-3.28/Modules/Platform/Linux.cmake /usr/share/cmake-3.28/Modules/Platform/UnixPaths.cmake /usr/share/cmake-3.28/Modules/SelectLibraryConfigurations.cmake /usr/share/cmake-3.28/Modules/WriteBasicConfigVersionFile.cmake /usr/share/cmake-3.28/Templates/CPackConfig.cmake.in CMakeCache.txt CMakeFiles/3.28.3/CMakeCCompiler.cmake CMakeFiles/3.28.3/CMakeCXXCompiler.cmake CMakeFiles/3.28.3/CMakeSystem.cmake _deps/hdr_histogram-src/CMakeLists.txt _deps/hdr_histogram-src/cmake/JoinPaths.cmake _deps/hdr_histogram-src/config.cmake.in _deps/hdr_histogram-src/hdr_histogram.pc.in _deps/hdr_histogram-src/include/CMakeLists.txt _deps/hdr_histogram-src/include/hdr/hdr_histogram_version.h _deps/hdr_histogram-src/src/CMakeLists.txt
+build build.ninja: RERUN_CMAKE | /home/ubuntu/Lite-Exchange/v2/CMakeLists.txt /home/ubuntu/Lite-Exchange/v2/bench/CMakeLists.txt /home/ubuntu/Lite-Exchange/v2/test/CMakeLists.txt /home/ubuntu/Lite-Exchange/v2/test/book/CMakeLists.txt /home/ubuntu/Lite-Exchange/v2/test/engine/CMakeLists.txt /home/ubuntu/Lite-Exchange/v2/test/net/CMakeLists.txt /home/ubuntu/Lite-Exchange/v2/test/proto/CMakeLists.txt /home/ubuntu/Lite-Exchange/v2/test/queue/CMakeLists.txt /home/ubuntu/Lite-Exchange/v2/test/util/CMakeLists.txt /usr/lib/x86_64-linux-gnu/cmake/GTest/GTestConfig.cmake /usr/lib/x86_64-linux-gnu/cmake/GTest/GTestConfigVersion.cmake /usr/lib/x86_64-linux-gnu/cmake/GTest/GTestTargets-none.cmake /usr/lib/x86_64-linux-gnu/cmake/GTest/GTestTargets.cmake /usr/share/cmake-3.28/Modules/BasicConfigVersion-AnyNewerVersion.cmake.in /usr/share/cmake-3.28/Modules/CMakeCInformation.cmake /usr/share/cmake-3.28/Modules/CMakeCXXInformation.cmake /usr/share/cmake-3.28/Modules/CMakeCommonLanguageInclude.cmake /usr/share/cmake-3.28/Modules/CMakeFindDependencyMacro.cmake /usr/share/cmake-3.28/Modules/CMakeGenericSystem.cmake /usr/share/cmake-3.28/Modules/CMakeInitializeConfigs.cmake /usr/share/cmake-3.28/Modules/CMakeLanguageInformation.cmake /usr/share/cmake-3.28/Modules/CMakePackageConfigHelpers.cmake /usr/share/cmake-3.28/Modules/CMakeSystemSpecificInformation.cmake /usr/share/cmake-3.28/Modules/CMakeSystemSpecificInitialize.cmake /usr/share/cmake-3.28/Modules/CPack.cmake /usr/share/cmake-3.28/Modules/CPackComponent.cmake /usr/share/cmake-3.28/Modules/CheckCSourceCompiles.cmake /usr/share/cmake-3.28/Modules/CheckCXXSourceCompiles.cmake /usr/share/cmake-3.28/Modules/CheckIncludeFile.cmake /usr/share/cmake-3.28/Modules/CheckIncludeFileCXX.cmake /usr/share/cmake-3.28/Modules/CheckLibraryExists.cmake /usr/share/cmake-3.28/Modules/Compiler/CMakeCommonCompilerMacros.cmake /usr/share/cmake-3.28/Modules/Compiler/GNU-C.cmake /usr/share/cmake-3.28/Modules/Compiler/GNU-CXX.cmake /usr/share/cmake-3.28/Modules/Compiler/GNU.cmake /usr/share/cmake-3.28/Modules/ExternalProject/shared_internal_commands.cmake /usr/share/cmake-3.28/Modules/FetchContent.cmake /usr/share/cmake-3.28/Modules/FetchContent/CMakeLists.cmake.in /usr/share/cmake-3.28/Modules/FindGTest.cmake /usr/share/cmake-3.28/Modules/FindGit.cmake /usr/share/cmake-3.28/Modules/FindPackageHandleStandardArgs.cmake /usr/share/cmake-3.28/Modules/FindPackageMessage.cmake /usr/share/cmake-3.28/Modules/FindPkgConfig.cmake /usr/share/cmake-3.28/Modules/FindThreads.cmake /usr/share/cmake-3.28/Modules/FindZLIB.cmake /usr/share/cmake-3.28/Modules/GNUInstallDirs.cmake /usr/share/cmake-3.28/Modules/GoogleTest.cmake /usr/share/cmake-3.28/Modules/Internal/CheckSourceCompiles.cmake /usr/share/cmake-3.28/Modules/Platform/Linux-GNU-C.cmake /usr/share/cmake-3.28/Modules/Platform/Linux-GNU-CXX.cmake /usr/share/cmake-3.28/Modules/Platform/Linux-GNU.cmake /usr/share/cmake-3.28/Modules/Platform/Linux-Initialize.cmake /usr/share/cmake-3.28/Modules/Platform/Linux.cmake /usr/share/cmake-3.28/Modules/Platform/UnixPaths.cmake /usr/share/cmake-3.28/Modules/SelectLibraryConfigurations.cmake /usr/share/cmake-3.28/Modules/WriteBasicConfigVersionFile.cmake /usr/share/cmake-3.28/Templates/CPackConfig.cmake.in CMakeCache.txt CMakeFiles/3.28.3/CMakeCCompiler.cmake CMakeFiles/3.28.3/CMakeCXXCompiler.cmake CMakeFiles/3.28.3/CMakeSystem.cmake _deps/hdr_histogram-src/CMakeLists.txt _deps/hdr_histogram-src/cmake/JoinPaths.cmake _deps/hdr_histogram-src/config.cmake.in _deps/hdr_histogram-src/hdr_histogram.pc.in _deps/hdr_histogram-src/include/CMakeLists.txt _deps/hdr_histogram-src/include/hdr/hdr_histogram_version.h _deps/hdr_histogram-src/src/CMakeLists.txt
   pool = console
 
 
 #############################################
 # A missing CMake input file is not an error.
 
-build /home/ubuntu/Lite-Exchange/v2/CMakeLists.txt /home/ubuntu/Lite-Exchange/v2/bench/CMakeLists.txt /home/ubuntu/Lite-Exchange/v2/test/CMakeLists.txt /home/ubuntu/Lite-Exchange/v2/test/book/CMakeLists.txt /home/ubuntu/Lite-Exchange/v2/test/engine/CMakeLists.txt /home/ubuntu/Lite-Exchange/v2/test/net/CMakeLists.txt /home/ubuntu/Lite-Exchange/v2/test/proto/CMakeLists.txt /home/ubuntu/Lite-Exchange/v2/test/queue/CMakeLists.txt /home/ubuntu/Lite-Exchange/v2/test/util/CMakeLists.txt /usr/lib/x86_64-linux-gnu/cmake/GTest/GTestConfig.cmake /usr/lib/x86_64-linux-gnu/cmake/GTest/GTestConfigVersion.cmake /usr/lib/x86_64-linux-gnu/cmake/GTest/GTestTargets-none.cmake /usr/lib/x86_64-linux-gnu/cmake/GTest/GTestTargets.cmake /usr/share/cmake-3.28/Modules/BasicConfigVersion-AnyNewerVersion.cmake.in /usr/share/cmake-3.28/Modules/CMakeCCompiler.cmake.in /usr/share/cmake-3.28/Modules/CMakeCCompilerABI.c /usr/share/cmake-3.28/Modules/CMakeCInformation.cmake /usr/share/cmake-3.28/Modules/CMakeCXXCompiler.cmake.in /usr/share/cmake-3.28/Modules/CMakeCXXCompilerABI.cpp /usr/share/cmake-3.28/Modules/CMakeCXXInformation.cmake /usr/share/cmake-3.28/Modules/CMakeCommonLanguageInclude.cmake /usr/share/cmake-3.28/Modules/CMakeCompilerIdDetection.cmake /usr/share/cmake-3.28/Modules/CMakeDetermineCCompiler.cmake /usr/share/cmake-3.28/Modules/CMakeDetermineCXXCompiler.cmake /usr/share/cmake-3.28/Modules/CMakeDetermineCompileFeatures.cmake /usr/share/cmake-3.28/Modules/CMakeDetermineCompiler.cmake /usr/share/cmake-3.28/Modules/CMakeDetermineCompilerABI.cmake /usr/share/cmake-3.28/Modules/CMakeDetermineCompilerId.cmake /usr/share/cmake-3.28/Modules/CMakeDetermineSystem.cmake /usr/share/cmake-3.28/Modules/CMakeFindBinUtils.cmake /usr/share/cmake-3.28/Modules/CMakeFindDependencyMacro.cmake /usr/share/cmake-3.28/Modules/CMakeGenericSystem.cmake /usr/share/cmake-3.28/Modules/CMakeInitializeConfigs.cmake /usr/share/cmake-3.28/Modules/CMakeLanguageInformation.cmake /usr/share/cmake-3.28/Modules/CMakeNinjaFindMake.cmake /usr/share/cmake-3.28/Modules/CMakePackageConfigHelpers.cmake /usr/share/cmake-3.28/Modules/CMakeParseImplicitIncludeInfo.cmake /usr/share/cmake-3.28/Modules/CMakeParseImplicitLinkInfo.cmake /usr/share/cmake-3.28/Modules/CMakeParseLibraryArchitecture.cmake /usr/share/cmake-3.28/Modules/CMakeSystem.cmake.in /usr/share/cmake-3.28/Modules/CMakeSystemSpecificInformation.cmake /usr/share/cmake-3.28/Modules/CMakeSystemSpecificInitialize.cmake /usr/share/cmake-3.28/Modules/CMakeTestCCompiler.cmake /usr/share/cmake-3.28/Modules/CMakeTestCXXCompiler.cmake /usr/share/cmake-3.28/Modules/CMakeTestCompilerCommon.cmake /usr/share/cmake-3.28/Modules/CPack.cmake /usr/share/cmake-3.28/Modules/CPackComponent.cmake /usr/share/cmake-3.28/Modules/CheckCSourceCompiles.cmake /usr/share/cmake-3.28/Modules/CheckCXXSourceCompiles.cmake /usr/share/cmake-3.28/Modules/CheckIncludeFile.cmake /usr/share/cmake-3.28/Modules/CheckIncludeFileCXX.cmake /usr/share/cmake-3.28/Modules/CheckLibraryExists.cmake /usr/share/cmake-3.28/Modules/Compiler/ADSP-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/ARMCC-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/ARMClang-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/AppleClang-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/Borland-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/Bruce-C-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/CMakeCommonCompilerMacros.cmake /usr/share/cmake-3.28/Modules/Compiler/Clang-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/Clang-DetermineCompilerInternal.cmake /usr/share/cmake-3.28/Modules/Compiler/Comeau-CXX-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/Compaq-C-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/Compaq-CXX-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/Cray-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/CrayClang-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/Embarcadero-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/Fujitsu-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/FujitsuClang-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/GHS-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/GNU-C-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/GNU-C.cmake /usr/share/cmake-3.28/Modules/Compiler/GNU-CXX-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/GNU-CXX.cmake /usr/share/cmake-3.28/Modules/Compiler/GNU-FindBinUtils.cmake /usr/share/cmake-3.28/Modules/Compiler/GNU.cmake /usr/share/cmake-3.28/Modules/Compiler/HP-C-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/HP-CXX-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/IAR-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/IBMCPP-C-DetermineVersionInternal.cmake /usr/share/cmake-3.28/Modules/Compiler/IBMCPP-CXX-DetermineVersionInternal.cmake /usr/share/cmake-3.28/Modules/Compiler/IBMClang-C-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/IBMClang-CXX-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/Intel-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/IntelLLVM-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/LCC-C-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/LCC-CXX-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/MSVC-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/NVHPC-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/NVIDIA-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/OpenWatcom-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/OrangeC-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/PGI-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/PathScale-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/SCO-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/SDCC-C-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/SunPro-C-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/SunPro-CXX-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/TI-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/Tasking-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/TinyCC-C-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/VisualAge-C-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/VisualAge-CXX-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/Watcom-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/XL-C-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/XL-CXX-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/XLClang-C-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/XLClang-CXX-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/zOS-C-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/Compiler/zOS-CXX-DetermineCompiler.cmake /usr/share/cmake-3.28/Modules/ExternalProject/shared_internal_commands.cmake /usr/share/cmake-3.28/Modules/FetchContent.cmake /usr/share/cmake-3.28/Modules/FetchContent/CMakeLists.cmake.in /usr/share/cmake-3.28/Modules/FindGTest.cmake /usr/share/cmake-3.28/Modules/FindGit.cmake /usr/share/cmake-3.28/Modules/FindPackageHandleStandardArgs.cmake /usr/share/cmake-3.28/Modules/FindPackageMessage.cmake /usr/share/cmake-3.28/Modules/FindPkgConfig.cmake /usr/share/cmake-3.28/Modules/FindThreads.cmake /usr/share/cmake-3.28/Modules/FindZLIB.cmake /usr/share/cmake-3.28/Modules/GNUInstallDirs.cmake /usr/share/cmake-3.28/Modules/GoogleTest.cmake /usr/share/cmake-3.28/Modules/Internal/CheckSourceCompiles.cmake /usr/share/cmake-3.28/Modules/Internal/FeatureTesting.cmake /usr/share/cmake-3.28/Modules/Platform/Linux-Determine-CXX.cmake /usr/share/cmake-3.28/Modules/Platform/Linux-GNU-C.cmake /usr/share/cmake-3.28/Modules/Platform/Linux-GNU-CXX.cmake /usr/share/cmake-3.28/Modules/Platform/Linux-GNU.cmake /usr/share/cmake-3.28/Modules/Platform/Linux-Initialize.cmake /usr/share/cmake-3.28/Modules/Platform/Linux.cmake /usr/share/cmake-3.28/Modules/Platform/UnixPaths.cmake /usr/share/cmake-3.28/Modules/SelectLibraryConfigurations.cmake /usr/share/cmake-3.28/Modules/WriteBasicConfigVersionFile.cmake /usr/share/cmake-3.28/Templates/CPackConfig.cmake.in CMakeCache.txt CMakeFiles/3.28.3/CMakeCCompiler.cmake CMakeFiles/3.28.3/CMakeCXXCompiler.cmake CMakeFiles/3.28.3/CMakeSystem.cmake _deps/hdr_histogram-src/CMakeLists.txt _deps/hdr_histogram-src/cmake/JoinPaths.cmake _deps/hdr_histogram-src/config.cmake.in _deps/hdr_histogram-src/hdr_histogram.pc.in _deps/hdr_histogram-src/include/CMakeLists.txt _deps/hdr_histogram-src/include/hdr/hdr_histogram_version.h _deps/hdr_histogram-src/src/CMakeLists.txt: phony
+build /home/ubuntu/Lite-Exchange/v2/CMakeLists.txt /home/ubuntu/Lite-Exchange/v2/bench/CMakeLists.txt /home/ubuntu/Lite-Exchange/v2/test/CMakeLists.txt /home/ubuntu/Lite-Exchange/v2/test/book/CMakeLists.txt /home/ubuntu/Lite-Exchange/v2/test/engine/CMakeLists.txt /home/ubuntu/Lite-Exchange/v2/test/net/CMakeLists.txt /home/ubuntu/Lite-Exchange/v2/test/proto/CMakeLists.txt /home/ubuntu/Lite-Exchange/v2/test/queue/CMakeLists.txt /home/ubuntu/Lite-Exchange/v2/test/util/CMakeLists.txt /usr/lib/x86_64-linux-gnu/cmake/GTest/GTestConfig.cmake /usr/lib/x86_64-linux-gnu/cmake/GTest/GTestConfigVersion.cmake /usr/lib/x86_64-linux-gnu/cmake/GTest/GTestTargets-none.cmake /usr/lib/x86_64-linux-gnu/cmake/GTest/GTestTargets.cmake /usr/share/cmake-3.28/Modules/BasicConfigVersion-AnyNewerVersion.cmake.in /usr/share/cmake-3.28/Modules/CMakeCInformation.cmake /usr/share/cmake-3.28/Modules/CMakeCXXInformation.cmake /usr/share/cmake-3.28/Modules/CMakeCommonLanguageInclude.cmake /usr/share/cmake-3.28/Modules/CMakeFindDependencyMacro.cmake /usr/share/cmake-3.28/Modules/CMakeGenericSystem.cmake /usr/share/cmake-3.28/Modules/CMakeInitializeConfigs.cmake /usr/share/cmake-3.28/Modules/CMakeLanguageInformation.cmake /usr/share/cmake-3.28/Modules/CMakePackageConfigHelpers.cmake /usr/share/cmake-3.28/Modules/CMakeSystemSpecificInformation.cmake /usr/share/cmake-3.28/Modules/CMakeSystemSpecificInitialize.cmake /usr/share/cmake-3.28/Modules/CPack.cmake /usr/share/cmake-3.28/Modules/CPackComponent.cmake /usr/share/cmake-3.28/Modules/CheckCSourceCompiles.cmake /usr/share/cmake-3.28/Modules/CheckCXXSourceCompiles.cmake /usr/share/cmake-3.28/Modules/CheckIncludeFile.cmake /usr/share/cmake-3.28/Modules/CheckIncludeFileCXX.cmake /usr/share/cmake-3.28/Modules/CheckLibraryExists.cmake /usr/share/cmake-3.28/Modules/Compiler/CMakeCommonCompilerMacros.cmake /usr/share/cmake-3.28/Modules/Compiler/GNU-C.cmake /usr/share/cmake-3.28/Modules/Compiler/GNU-CXX.cmake /usr/share/cmake-3.28/Modules/Compiler/GNU.cmake /usr/share/cmake-3.28/Modules/ExternalProject/shared_internal_commands.cmake /usr/share/cmake-3.28/Modules/FetchContent.cmake /usr/share/cmake-3.28/Modules/FetchContent/CMakeLists.cmake.in /usr/share/cmake-3.28/Modules/FindGTest.cmake /usr/share/cmake-3.28/Modules/FindGit.cmake /usr/share/cmake-3.28/Modules/FindPackageHandleStandardArgs.cmake /usr/share/cmake-3.28/Modules/FindPackageMessage.cmake /usr/share/cmake-3.28/Modules/FindPkgConfig.cmake /usr/share/cmake-3.28/Modules/FindThreads.cmake /usr/share/cmake-3.28/Modules/FindZLIB.cmake /usr/share/cmake-3.28/Modules/GNUInstallDirs.cmake /usr/share/cmake-3.28/Modules/GoogleTest.cmake /usr/share/cmake-3.28/Modules/Internal/CheckSourceCompiles.cmake /usr/share/cmake-3.28/Modules/Platform/Linux-GNU-C.cmake /usr/share/cmake-3.28/Modules/Platform/Linux-GNU-CXX.cmake /usr/share/cmake-3.28/Modules/Platform/Linux-GNU.cmake /usr/share/cmake-3.28/Modules/Platform/Linux-Initialize.cmake /usr/share/cmake-3.28/Modules/Platform/Linux.cmake /usr/share/cmake-3.28/Modules/Platform/UnixPaths.cmake /usr/share/cmake-3.28/Modules/SelectLibraryConfigurations.cmake /usr/share/cmake-3.28/Modules/WriteBasicConfigVersionFile.cmake /usr/share/cmake-3.28/Templates/CPackConfig.cmake.in CMakeCache.txt CMakeFiles/3.28.3/CMakeCCompiler.cmake CMakeFiles/3.28.3/CMakeCXXCompiler.cmake CMakeFiles/3.28.3/CMakeSystem.cmake _deps/hdr_histogram-src/CMakeLists.txt _deps/hdr_histogram-src/cmake/JoinPaths.cmake _deps/hdr_histogram-src/config.cmake.in _deps/hdr_histogram-src/hdr_histogram.pc.in _deps/hdr_histogram-src/include/CMakeLists.txt _deps/hdr_histogram-src/include/hdr/hdr_histogram_version.h _deps/hdr_histogram-src/src/CMakeLists.txt: phony
 
 
 #############################################
