@@ -10,6 +10,14 @@
 
 namespace lx::book
 {
+
+struct OrderHandle
+{
+  static constexpr uint32_t INVALID = UINT32_MAX;
+  uint32_t                  slot = INVALID;
+  uint32_t                  gen = 0;
+  bool valid() const { return slot != INVALID; }
+};
 template <uint32_t MAX_ORDERS, uint32_t LADDER_SIZE>
 class OrderBook
 {
@@ -22,18 +30,18 @@ class OrderBook
   {
   }
 
-  // Returns slot idx if order rests else NULLIDX if filled or error
-  uint32_t add_order(const proto::NewOrder& msg, proto::Fill* fills, uint32_t& fill_count,
-                     uint32_t max_fills)
+  // Returns a valid OrderHandle if the order rests; invalid handle if filled or error.
+  OrderHandle add_order(const proto::NewOrder& msg, proto::Fill* fills, uint32_t& fill_count,
+                        uint32_t max_fills)
   {
     int32_t  idx = price_to_idx(msg.price);
     uint32_t uidx = static_cast<uint32_t>(idx);
     if (idx < 0 || uidx >= LADDER_SIZE)
-      return NULL_IDX;
+      return {};
 
     uint32_t slot = pool_.alloc();
     if (slot == Pool<Order, MAX_ORDERS>::INVALID_IDX)
-      return NULL_IDX;
+      return {};
 
     Order& o = pool_[slot];
     o.order_id = msg.order_id;
@@ -55,7 +63,7 @@ class OrderBook
         bid_levels_[uidx].push_back(slot, pool_.data());
         if (best_bid_idx_ == NULL_IDX || uidx > best_bid_idx_)
           best_bid_idx_ = uidx;
-        return slot;
+        return {slot, pool_.gen(slot)};
       }
     }
     else
@@ -66,33 +74,37 @@ class OrderBook
         ask_levels_[uidx].push_back(slot, pool_.data());
         if (best_ask_idx_ == NULL_IDX || uidx < best_ask_idx_)
           best_ask_idx_ = uidx;
-        return slot;
+        return {slot, pool_.gen(slot)};
       }
     }
 
     pool_.free(slot);
-    return NULL_IDX;
+    return {};
   }
 
-  void cancel_order(uint32_t slot)
+  bool cancel_order(OrderHandle h)
   {
-    Order&   o = pool_[slot];
+    if (h.slot >= MAX_ORDERS || pool_.gen(h.slot) != h.gen)
+      return false;
+
+    Order&   o = pool_[h.slot];
     uint32_t uidx = static_cast<uint32_t>(price_to_idx(o.price));
 
     if (o.side == proto::Side::BUY)
     {
-      bid_levels_[uidx].remove(slot, pool_.data());
+      bid_levels_[uidx].remove(h.slot, pool_.data());
       if (bid_levels_[uidx].empty() && best_bid_idx_ == uidx)
         best_bid_idx_ = find_best<proto::Side::BUY>(uidx > 0 ? uidx - 1 : NULL_IDX);
     }
     else
     {
-      ask_levels_[uidx].remove(slot, pool_.data());
+      ask_levels_[uidx].remove(h.slot, pool_.data());
       if (ask_levels_[uidx].empty() && best_ask_idx_ == uidx)
         best_ask_idx_ = find_best<proto::Side::SELL>(uidx + 1);
     }
 
-    pool_.free(slot);
+    pool_.free(h.slot);
+    return true;
   }
 
   int64_t best_bid_price() const

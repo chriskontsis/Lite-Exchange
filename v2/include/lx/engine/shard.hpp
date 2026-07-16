@@ -21,10 +21,11 @@ class Shard
 
     proto::Fill fills[64];
     uint32_t    fill_count = 0;
-    book_.add_order(msg, fills, fill_count);
+    book_.add_order(msg, fills, fill_count, 64);
 
     for (uint32_t i = 0; i < fill_count; ++i)
-      outbound_.push(fills[i]);
+      while (!outbound_.push(fills[i]))
+        ;
   }
 
   void run()
@@ -36,7 +37,7 @@ class Shard
   void stop() { running_.store(false, std::memory_order_relaxed); }
 
   SpscQueue<proto::NewOrder, QUEUE_DEPTH>& inbound() { return inbound_; }
-  SpscQueue<proto::Fill,     QUEUE_DEPTH>& outbound() { return outbound_; }
+  SpscQueue<proto::Fill, QUEUE_DEPTH>& outbound() { return outbound_; }
 
   int64_t best_bid() const { return book_.best_bid_price(); }
   int64_t best_ask() const { return book_.best_ask_price(); }
@@ -44,7 +45,7 @@ class Shard
  private:
   book::OrderBook<MAX_ORDERS, LADDER_SIZE> book_;
   SpscQueue<proto::NewOrder, QUEUE_DEPTH>  inbound_;
-  SpscQueue<proto::Fill,     QUEUE_DEPTH>  outbound_;
+  SpscQueue<proto::Fill, QUEUE_DEPTH>      outbound_;
   std::atomic<bool>                        running_{true};
 };
 }  // namespace lx::engine

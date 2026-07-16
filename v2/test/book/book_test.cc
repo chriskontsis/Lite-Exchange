@@ -134,7 +134,7 @@ TEST(OrderBook, PassiveBuyPlaced)
   Fill                fills[16];
   uint32_t            fc = 0;
 
-  EXPECT_NE(book.add_order(make_order(1, 105, 100, Side::BUY), fills, fc, 16), NULL_IDX);
+  EXPECT_TRUE(book.add_order(make_order(1, 105, 100, Side::BUY), fills, fc, 16).valid());
   EXPECT_EQ(fc, 0u);
   EXPECT_EQ(book.best_bid_price(), int64_t{105});
   EXPECT_EQ(book.best_ask_price(), INT64_MAX);
@@ -146,7 +146,7 @@ TEST(OrderBook, PassiveSellPlaced)
   Fill                fills[16];
   uint32_t            fc = 0;
 
-  EXPECT_NE(book.add_order(make_order(1, 105, 100, Side::SELL), fills, fc, 16), NULL_IDX);
+  EXPECT_TRUE(book.add_order(make_order(1, 105, 100, Side::SELL), fills, fc, 16).valid());
   EXPECT_EQ(fc, 0u);
   EXPECT_EQ(book.best_ask_price(), int64_t{105});
   EXPECT_EQ(book.best_bid_price(), INT64_MIN);
@@ -160,8 +160,8 @@ TEST(OrderBook, FullMatch)
   book.add_order(make_order(1, 105, 50, Side::SELL), fills, fc, 16);
 
   fc = 0;
-  uint32_t slot = book.add_order(make_order(2, 105, 50, Side::BUY), fills, fc, 16);
-  EXPECT_EQ(slot, NULL_IDX);
+  OrderHandle h = book.add_order(make_order(2, 105, 50, Side::BUY), fills, fc, 16);
+  EXPECT_FALSE(h.valid());
   EXPECT_EQ(fc, 1u);
   EXPECT_EQ(fills[0].qty, uint32_t{50});
   EXPECT_EQ(fills[0].aggressor_id, uint64_t{2});
@@ -178,8 +178,8 @@ TEST(OrderBook, PartialMatch)
   book.add_order(make_order(1, 105, 30, Side::SELL), fills, fc, 16);
 
   fc = 0;
-  uint32_t slot = book.add_order(make_order(2, 105, 50, Side::BUY), fills, fc, 16);
-  EXPECT_NE(slot, NULL_IDX);
+  OrderHandle h = book.add_order(make_order(2, 105, 50, Side::BUY), fills, fc, 16);
+  EXPECT_TRUE(h.valid());
   EXPECT_EQ(fc, 1u);
   EXPECT_EQ(fills[0].qty, uint32_t{30});
   EXPECT_EQ(book.best_bid_price(), int64_t{105});
@@ -207,9 +207,9 @@ TEST(OrderBook, CancelBid)
   OrderBook<64, 1024> book{100, 1};
   Fill                fills[16];
   uint32_t            fc = 0;
-  uint32_t            slot = book.add_order(make_order(1, 105, 100, Side::BUY), fills, fc, 16);
-  EXPECT_NE(slot, NULL_IDX);
-  book.cancel_order(slot);
+  OrderHandle h = book.add_order(make_order(1, 105, 100, Side::BUY), fills, fc, 16);
+  EXPECT_TRUE(h.valid());
+  book.cancel_order(h);
   EXPECT_EQ(book.best_bid_price(), INT64_MIN);
 }
 
@@ -218,8 +218,8 @@ TEST(OrderBook, IocKilled)
   OrderBook<64, 1024> book{100, 1};
   Fill                fills[16];
   uint32_t            fc = 0;
-  uint32_t slot = book.add_order(make_order(1, 105, 100, Side::BUY, TimeInForce::IOC), fills, fc, 16);
-  EXPECT_EQ(slot, NULL_IDX);
+  OrderHandle h = book.add_order(make_order(1, 105, 100, Side::BUY, TimeInForce::IOC), fills, fc, 16);
+  EXPECT_FALSE(h.valid());
   EXPECT_EQ(fc, 0u);
   EXPECT_EQ(book.best_bid_price(), INT64_MIN);
 }

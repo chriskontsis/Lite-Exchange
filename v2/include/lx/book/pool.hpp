@@ -26,6 +26,7 @@ class Pool
   void free(uint32_t idx)
   {
     assert(idx < N);
+    gen_[idx]++;
     free_list_[free_top_++] = idx;
   }
 
@@ -46,10 +47,12 @@ class Pool
 
   uint32_t capacity() const { return N; }
   uint32_t free_count() const { return free_top_; }
+  uint32_t gen(uint32_t idx) const { return gen_[idx]; }
 
  private:
   T        slots_[N];
   uint32_t free_list_[N];
   uint32_t free_top_;
+  uint32_t gen_[N]{};
 };
 }  // namespace lx::book

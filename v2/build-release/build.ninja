@@ -344,7 +344,7 @@ build test/util/CMakeFiles/huge_page_test.dir/huge_page_test.cc.o: CXX_COMPILER_
 
 build test/util/huge_page_test: CXX_EXECUTABLE_LINKER__huge_page_test_Release test/util/CMakeFiles/huge_page_test.dir/huge_page_test.cc.o | /usr/lib/x86_64-linux-gnu/libgtest_main.a /usr/lib/x86_64-linux-gnu/libgtest.a
   FLAGS = -O3 -DNDEBUG -flto=auto -fno-fat-lto-objects
-  LINK_LIBRARIES = /usr/lib/x86_64-linux-gnu/libgtest_main.a  -llx_includes  /usr/lib/x86_64-linux-gnu/libgtest.a
+  LINK_LIBRARIES = /usr/lib/x86_64-linux-gnu/libgtest_main.a  /usr/lib/x86_64-linux-gnu/libgtest.a
   OBJECT_DIR = test/util/CMakeFiles/huge_page_test.dir
   POST_BUILD = :
   PRE_LINK = :
