@@ -3,6 +3,7 @@
 #include <climits>
 #include <cstdint>
 
+#include "lx/book/level_bitmap.hpp"
 #include "lx/book/order.hpp"
 #include "lx/book/pool.hpp"
 #include "lx/book/price_level.hpp"
@@ -61,6 +62,7 @@ class OrderBook
       if (o.qty > 0 && msg.tif != proto::TimeInForce::IOC)
       {
         bid_levels_[uidx].push_back(slot, pool_.data());
+        bid_occ_.set(uidx);
         if (best_bid_idx_ == NULL_IDX || uidx > best_bid_idx_)
           best_bid_idx_ = uidx;
         return {slot, pool_.gen(slot)};
@@ -72,6 +74,7 @@ class OrderBook
       if (o.qty > 0 && msg.tif != proto::TimeInForce::IOC)
       {
         ask_levels_[uidx].push_back(slot, pool_.data());
+        ask_occ_.set(uidx);
         if (best_ask_idx_ == NULL_IDX || uidx < best_ask_idx_)
           best_ask_idx_ = uidx;
         return {slot, pool_.gen(slot)};
@@ -93,14 +96,22 @@ class OrderBook
     if (o.side == proto::Side::BUY)
     {
       bid_levels_[uidx].remove(h.slot, pool_.data());
-      if (bid_levels_[uidx].empty() && best_bid_idx_ == uidx)
-        best_bid_idx_ = find_best<proto::Side::BUY>(uidx > 0 ? uidx - 1 : NULL_IDX);
+      if (bid_levels_[uidx].empty())
+      {
+        bid_occ_.clear(uidx);
+        if (best_bid_idx_ == uidx)
+          best_bid_idx_ = find_best<proto::Side::BUY>(uidx > 0 ? uidx - 1 : NULL_IDX);
+      }
     }
     else
     {
       ask_levels_[uidx].remove(h.slot, pool_.data());
-      if (ask_levels_[uidx].empty() && best_ask_idx_ == uidx)
-        best_ask_idx_ = find_best<proto::Side::SELL>(uidx + 1);
+      if (ask_levels_[uidx].empty())
+      {
+        ask_occ_.clear(uidx);
+        if (best_ask_idx_ == uidx)
+          best_ask_idx_ = find_best<proto::Side::SELL>(uidx + 1);
+      }
     }
 
     pool_.free(h.slot);
@@ -127,9 +138,11 @@ class OrderBook
   uint32_t best_bid_idx_;
   uint32_t best_ask_idx_;
 
-  PriceLevel              bid_levels_[LADDER_SIZE];
-  PriceLevel              ask_levels_[LADDER_SIZE];
-  Pool<Order, MAX_ORDERS> pool_;
+  PriceLevel               bid_levels_[LADDER_SIZE];
+  PriceLevel               ask_levels_[LADDER_SIZE];
+  Pool<Order, MAX_ORDERS>  pool_;
+  LevelBitmap<LADDER_SIZE> bid_occ_;
+  LevelBitmap<LADDER_SIZE> ask_occ_;
 
   int32_t price_to_idx(int64_t price) const
   {
@@ -140,25 +153,9 @@ class OrderBook
   uint32_t find_best(uint32_t from)
   {
     if constexpr (Side == proto::Side::BUY)
-    {
-      for (uint32_t i = from; i != NULL_IDX; --i)
-      {
-        if (!bid_levels_[i].empty())
-          return i;
-        if (i == 0)
-          break;
-      }
-    }
+      return bid_occ_.next_down(from);
     else
-    {
-      for (uint32_t i = from; i < LADDER_SIZE; ++i)
-      {
-        if (!ask_levels_[i].empty())
-          return i;
-      }
-    }
-
-    return NULL_IDX;
+      return ask_occ_.next_up(from);
   }
 
   template <proto::Side Side>
@@ -209,9 +206,15 @@ class OrderBook
       if (level.empty())
       {
         if constexpr (Side == proto::Side::BUY)
+        {
+          ask_occ_.clear(best);
           best = find_best<proto::Side::SELL>(best + 1);
+        }
         else
+        {
+          bid_occ_.clear(best);
           best = best > 0 ? find_best<proto::Side::BUY>(best - 1) : NULL_IDX;
+        }
       }
     }
   }

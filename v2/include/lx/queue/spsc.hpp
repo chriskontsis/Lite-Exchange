@@ -1,9 +1,9 @@
 #pragma once
 #include <atomic>
 #include <cstddef>
-#include <type_traits>
 
 #include "lx/util/cache.hpp"
+#include "lx/util/huge_page.hpp"
 
 namespace lx
 {
@@ -26,7 +26,7 @@ class SpscQueue
   }
   bool pop(T& val)
   {
-    const std::size_t tail = tail_.value.load(std::memory_order_acquire);
+    const std::size_t tail = tail_.value.load(std::memory_order_relaxed);
     if (head_.value.load(std::memory_order_acquire) == tail)
       return false;
     val = slots_[tail & kMask];
@@ -39,6 +39,6 @@ class SpscQueue
   static constexpr std::size_t          kMask = N - 1;
   CachePadded<std::atomic<std::size_t>> head_{};
   CachePadded<std::atomic<std::size_t>> tail_{};
-  T                                     slots_[N]{};
+  lx::util::HugePage<T, N>              slots_;
 };
 }  // namespace lx

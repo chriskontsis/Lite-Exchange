@@ -12,3 +12,7 @@ add_executable(latency_bench latency.cc)
 target_link_libraries(latency_bench PRIVATE hdr_histogram_static)
 # Benchmarks always build Release-like — override sanitisers
 target_compile_options(latency_bench PRIVATE -O3 -march=native -fno-omit-frame-pointer)
+
+add_executable(latency_breakdown latency_breakdown.cc)
+target_link_libraries(latency_breakdown PRIVATE hdr_histogram_static)
+target_compile_options(latency_breakdown PRIVATE -O3 -march=native -fno-omit-frame-pointer)
