@@ -46,10 +46,18 @@ struct Session
         closed_ = true;
         break;
       }
+      // Both order types normalise into one InboundMsg so they share a single
+      // ordered queue — a cancel can never overtake the order it targets.
       if (type == proto::MsgType::NEW_ORDER && frame_len == sizeof(proto::NewOrder))
       {
-        proto::NewOrder msg{};
-        std::memcpy(&msg, recv_buf_ + consumed, sizeof(msg));
+        proto::InboundMsg msg{};
+        std::memcpy(&msg.new_order, recv_buf_ + consumed, sizeof(proto::NewOrder));
+        q.push(msg);
+      }
+      else if (type == proto::MsgType::CANCEL_ORDER && frame_len == sizeof(proto::CancelOrder))
+      {
+        proto::InboundMsg msg{};
+        std::memcpy(&msg.cancel, recv_buf_ + consumed, sizeof(proto::CancelOrder));
         q.push(msg);
       }
 

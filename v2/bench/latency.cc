@@ -11,28 +11,26 @@
 
 using Shard = lx::engine::Shard<65536, 2048, 4096>;
 
-static lx::proto::NewOrder make_sell(uint64_t oid)
+static lx::proto::InboundMsg make_order(uint64_t oid, lx::proto::Side side)
 {
-  lx::proto::NewOrder msg{};
-  msg.hdr = {sizeof(msg), lx::proto::MsgType::NEW_ORDER, 0};
-  msg.order_id = oid;
-  msg.price = 1000;
-  msg.qty = 1;
-  msg.side = lx::proto::Side::SELL;
-  msg.tif = lx::proto::TimeInForce::GTC;
+  lx::proto::InboundMsg msg{};
+  msg.new_order.hdr = {sizeof(lx::proto::NewOrder), lx::proto::MsgType::NEW_ORDER, 0};
+  msg.new_order.order_id = oid;
+  msg.new_order.price = 1000;
+  msg.new_order.qty = 1;
+  msg.new_order.side = side;
+  msg.new_order.tif = lx::proto::TimeInForce::GTC;
   return msg;
 }
 
-static lx::proto::NewOrder make_buy(uint64_t oid)
+static lx::proto::InboundMsg make_sell(uint64_t oid)
 {
-  lx::proto::NewOrder msg{};
-  msg.hdr = {sizeof(msg), lx::proto::MsgType::NEW_ORDER, 0};
-  msg.order_id = oid;
-  msg.price = 1000;
-  msg.qty = 1;
-  msg.side = lx::proto::Side::BUY;
-  msg.tif = lx::proto::TimeInForce::GTC;
-  return msg;
+  return make_order(oid, lx::proto::Side::SELL);
+}
+
+static lx::proto::InboundMsg make_buy(uint64_t oid)
+{
+  return make_order(oid, lx::proto::Side::BUY);
 }
 
 int main()
@@ -57,21 +55,23 @@ int main()
   hdr_histogram* hist = nullptr;
   hdr_init(1, 10'000'000, 3, &hist);
 
-  lx::proto::Fill fill{};
+  lx::proto::OutboundMsg out{};
 
-  // Each iteration: push one resting sell, wait for it to land in book,
-  // then push a matching buy and measure round-trip to fill.
+  // Each iteration: push one resting sell and drain its Ack (untimed), then
+  // push a matching buy and measure round-trip to the Fill.
   for (int i = 0; i < TOTAL; ++i)
   {
-    // Place resting sell
+    // Place resting sell, wait for its Ack so the book is primed.
     while (!shard.inbound().push(make_sell(i)))
       ;
+    while (!shard.outbound().pop(out))
+      ;
 
-    // Stamp and send aggressor buy
+    // Stamp and send aggressor buy; the full match produces only a Fill.
     uint64_t t0 = lx::util::rdtscp();
     while (!shard.inbound().push(make_buy(TOTAL + i)))
       ;
-    while (!shard.outbound().pop(fill))
+    while (!shard.outbound().pop(out))
       ;
     uint64_t t1 = lx::util::rdtscp();
 

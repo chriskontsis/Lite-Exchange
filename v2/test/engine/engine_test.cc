@@ -5,45 +5,64 @@
 using namespace lx;
 using namespace lx::proto;
 
-static NewOrder make_order(uint64_t oid, int64_t price, uint32_t qty, Side side,
-                           TimeInForce tif = TimeInForce::GTC)
+static InboundMsg in_new(uint64_t oid, int64_t price, uint32_t qty, Side side,
+                         TimeInForce tif = TimeInForce::GTC)
 {
-  NewOrder msg{};
-  msg.hdr = {sizeof(NewOrder), MsgType::NEW_ORDER, 0};
-  msg.order_id = oid;
-  msg.price = price;
-  msg.qty = qty;
-  msg.side = side;
-  msg.tif = tif;
-  return msg;
+  InboundMsg m{};
+  m.new_order.hdr = {sizeof(NewOrder), MsgType::NEW_ORDER, 0};
+  m.new_order.order_id = oid;
+  m.new_order.price = price;
+  m.new_order.qty = qty;
+  m.new_order.side = side;
+  m.new_order.tif = tif;
+  return m;
 }
 
-TEST(Shard, PassiveOrderRests)
+static InboundMsg in_cancel(uint64_t token)
+{
+  InboundMsg m{};
+  m.cancel.hdr = {sizeof(CancelOrder), MsgType::CANCEL_ORDER, 0};
+  m.cancel.order_token = token;
+  return m;
+}
+
+// Pop one outbound message, failing the test if the queue is empty.
+static OutboundMsg pop_out(engine::Shard<256, 64, 64>& shard)
+{
+  OutboundMsg m{};
+  EXPECT_TRUE(shard.outbound().pop(m));
+  return m;
+}
+
+TEST(Shard, PassiveOrderRestsEmitsAck)
 {
   engine::Shard<256, 64, 64> shard{100, 1};
-  shard.inbound().push(make_order(1, 105, 50, Side::BUY));
+  shard.inbound().push(in_new(1, 105, 50, Side::BUY));
   shard.tick();
 
-  Fill fill{};
-  EXPECT_FALSE(shard.outbound().pop(fill));
+  OutboundMsg m = pop_out(shard);
+  EXPECT_EQ(m.hdr.type, MsgType::ACK);
+  EXPECT_EQ(m.ack.order_id, uint64_t{1});
+  EXPECT_NE(m.ack.order_token, uint64_t{0});
   EXPECT_EQ(shard.best_bid(), int64_t{105});
 }
 
 TEST(Shard, MatchProducesFill)
 {
   engine::Shard<256, 64, 64> shard{100, 1};
-  shard.inbound().push(make_order(1, 105, 50, Side::SELL));
+  shard.inbound().push(in_new(1, 105, 50, Side::SELL));
+  shard.tick();
+  pop_out(shard);  // drain the resting sell's Ack
+
+  shard.inbound().push(in_new(2, 105, 50, Side::BUY));
   shard.tick();
 
-  shard.inbound().push(make_order(2, 105, 50, Side::BUY));
-  shard.tick();
-
-  Fill fill{};
-  EXPECT_TRUE(shard.outbound().pop(fill));
-  EXPECT_EQ(fill.qty, uint32_t{50});
-  EXPECT_EQ(fill.aggressor_id, uint64_t{2});
-  EXPECT_EQ(fill.resting_id, uint64_t{1});
-  EXPECT_EQ(fill.price, int64_t{105});
+  OutboundMsg m = pop_out(shard);
+  EXPECT_EQ(m.hdr.type, MsgType::FILL);
+  EXPECT_EQ(m.fill.qty, uint32_t{50});
+  EXPECT_EQ(m.fill.aggressor_id, uint64_t{2});
+  EXPECT_EQ(m.fill.resting_id, uint64_t{1});
+  EXPECT_EQ(m.fill.price, int64_t{105});
   EXPECT_EQ(shard.best_ask(), INT64_MAX);
 }
 
@@ -51,40 +70,83 @@ TEST(Shard, PartialMatchLeavesRemainder)
 {
   engine::Shard<256, 64, 64> shard{100, 1};
 
-  shard.inbound().push(make_order(1, 105, 100, Side::SELL));
+  shard.inbound().push(in_new(1, 105, 100, Side::SELL));
+  shard.tick();
+  pop_out(shard);  // resting sell Ack
+
+  shard.inbound().push(in_new(2, 105, 30, Side::BUY));
   shard.tick();
 
-  shard.inbound().push(make_order(2, 105, 30, Side::BUY));
-  shard.tick();
-
-  Fill fill{};
-  EXPECT_TRUE(shard.outbound().pop(fill));
-  EXPECT_EQ(fill.qty, uint32_t{30});
+  OutboundMsg m = pop_out(shard);
+  EXPECT_EQ(m.hdr.type, MsgType::FILL);
+  EXPECT_EQ(m.fill.qty, uint32_t{30});
   EXPECT_EQ(shard.best_ask(), int64_t{105});
 }
 
-TEST(Shard, MultipleOrdersSameTick)
+TEST(Shard, CancelRemovesRestingOrder)
 {
   engine::Shard<256, 64, 64> shard{100, 1};
 
-  shard.inbound().push(make_order(1, 105, 50, Side::SELL));
-  shard.inbound().push(make_order(2, 105, 50, Side::BUY));
+  shard.inbound().push(in_new(1, 105, 50, Side::BUY));
   shard.tick();
+  OutboundMsg ack = pop_out(shard);
+  ASSERT_EQ(ack.hdr.type, MsgType::ACK);
+  EXPECT_EQ(shard.best_bid(), int64_t{105});
+
+  shard.inbound().push(in_cancel(ack.ack.order_token));
   shard.tick();
 
-  Fill fill{};
-  EXPECT_TRUE(shard.outbound().pop(fill));
-  EXPECT_EQ(fill.qty, uint32_t{50});
+  OutboundMsg cack = pop_out(shard);
+  EXPECT_EQ(cack.hdr.type, MsgType::ACK);
+  EXPECT_EQ(shard.best_bid(), INT64_MIN);
+}
+
+TEST(Shard, CancelOrderingPreservedAfterNew)
+{
+  // NEW then CANCEL in the same stream: the cancel must not overtake the new,
+  // so by the time the cancel is processed the order is in the book.
+  engine::Shard<256, 64, 64> shard{100, 1};
+
+  shard.inbound().push(in_new(1, 105, 50, Side::BUY));
+  shard.tick();
+  OutboundMsg ack = pop_out(shard);
+  uint64_t    token = ack.ack.order_token;
+
+  shard.inbound().push(in_cancel(token));
+  shard.tick();
+  pop_out(shard);  // cancel Ack
+
+  EXPECT_EQ(shard.best_bid(), INT64_MIN);
+}
+
+TEST(Shard, StaleCancelRejected)
+{
+  engine::Shard<256, 64, 64> shard{100, 1};
+
+  shard.inbound().push(in_new(1, 105, 50, Side::BUY));
+  shard.tick();
+  OutboundMsg ack = pop_out(shard);
+  uint64_t    token = ack.ack.order_token;
+
+  shard.inbound().push(in_cancel(token));
+  shard.tick();
+  pop_out(shard);  // first cancel Ack (success)
+
+  shard.inbound().push(in_cancel(token));  // stale — already cancelled
+  shard.tick();
+
+  OutboundMsg rej = pop_out(shard);
+  EXPECT_EQ(rej.hdr.type, MsgType::REJECT);
 }
 
 TEST(Shard, IocKilledWhenNoLiquidity)
 {
   engine::Shard<256, 64, 64> shard{100, 1};
 
-  shard.inbound().push(make_order(1, 105, 50, Side::BUY, TimeInForce::IOC));
+  shard.inbound().push(in_new(1, 105, 50, Side::BUY, TimeInForce::IOC));
   shard.tick();
 
-  Fill fill{};
-  EXPECT_FALSE(shard.outbound().pop(fill));
+  OutboundMsg m{};
+  EXPECT_FALSE(shard.outbound().pop(m));  // IOC killed: no rest, no fill, no ack
   EXPECT_EQ(shard.best_bid(), INT64_MIN);
 }

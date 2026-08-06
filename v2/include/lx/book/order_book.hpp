@@ -18,6 +18,19 @@ struct OrderHandle
   uint32_t                  slot = INVALID;
   uint32_t                  gen = 0;
   bool valid() const { return slot != INVALID; }
+
+  // Exchange-assigned opaque token: gen in high 32 bits, slot in low 32.
+  // Clients echo this back to cancel; the gen half makes stale tokens
+  // (slot reused after free) detectable — the ABA guard travels on the wire.
+  uint64_t to_token() const
+  {
+    return (static_cast<uint64_t>(gen) << 32) | slot;
+  }
+
+  static OrderHandle from_token(uint64_t token)
+  {
+    return {static_cast<uint32_t>(token & 0xFFFFFFFF), static_cast<uint32_t>(token >> 32)};
+  }
 };
 template <uint32_t MAX_ORDERS, uint32_t LADDER_SIZE>
 class OrderBook
@@ -117,6 +130,8 @@ class OrderBook
     pool_.free(h.slot);
     return true;
   }
+
+  bool cancel_by_token(uint64_t token) { return cancel_order(OrderHandle::from_token(token)); }
 
   int64_t best_bid_price() const
   {

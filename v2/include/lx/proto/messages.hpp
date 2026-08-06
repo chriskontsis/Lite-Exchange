@@ -69,18 +69,19 @@ struct NewOrder
 
 struct CancelOrder
 {
-  Header   hdr;      // offset 0, size 4
-  uint32_t padding;  // offset 4, size 4
-  uint64_t order_id; // offset 8, size 8  (8-byte aligned ✓)
+  Header   hdr;         // offset 0, size 4
+  uint32_t padding;     // offset 4, size 4
+  uint64_t order_token; // offset 8, size 8  (8-byte aligned ✓) — exchange-assigned
 };
 
 // ----- Outbound Messages --------------
 
 struct Ack
 {
-  Header   hdr;      // offset 0, size 4
-  uint32_t padding;  // offset 4, size 4
-  uint64_t order_id; // offset 8, size 8  (8-byte aligned ✓)
+  Header   hdr;         // offset 0,  size 4
+  uint32_t padding;     // offset 4,  size 4
+  uint64_t order_id;    // offset 8,  size 8  (8-byte aligned ✓) — client's order_id
+  uint64_t order_token; // offset 16, size 8  — exchange-assigned handle for cancels
 };
 
 struct Reject
@@ -100,12 +101,32 @@ struct Fill
   int64_t  price;        // offset 24, size 8
 };
 
+// ----- Tagged unions for the engine queues -----
+// Every message begins with Header at offset 0, so `hdr.type` is readable
+// through any union member (common-initial-sequence rule for standard-layout
+// structs). Cancels share the inbound queue with new orders so a cancel can
+// never overtake the order it targets — FIFO ordering is a correctness need.
+
+union InboundMsg
+{
+  Header      hdr;
+  NewOrder    new_order;
+  CancelOrder cancel;
+};
+
+union OutboundMsg
+{
+  Header hdr;
+  Ack    ack;
+  Fill   fill;
+};
+
 // ---- Compile-time layout verification ----
 static_assert(sizeof(Header)      == 4);
 static_assert(sizeof(Logon)       == 16);
 static_assert(sizeof(NewOrder)    == 32);
 static_assert(sizeof(CancelOrder) == 16);
-static_assert(sizeof(Ack)         == 16);
+static_assert(sizeof(Ack)         == 24);
 static_assert(sizeof(Reject)      == 16);
 static_assert(sizeof(Fill)        == 32);
 

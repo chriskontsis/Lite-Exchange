@@ -223,3 +223,34 @@ TEST(OrderBook, IocKilled)
   EXPECT_EQ(fc, 0u);
   EXPECT_EQ(book.best_bid_price(), INT64_MIN);
 }
+
+TEST(OrderBook, TokenRoundTrip)
+{
+  OrderHandle h{7, 3};
+  uint64_t    t = h.to_token();
+  OrderHandle back = OrderHandle::from_token(t);
+  EXPECT_EQ(back.slot, 7u);
+  EXPECT_EQ(back.gen, 3u);
+}
+
+TEST(OrderBook, CancelByToken)
+{
+  OrderBook<64, 1024> book{100, 1};
+  Fill                fills[16];
+  uint32_t            fc = 0;
+  OrderHandle h = book.add_order(make_order(1, 105, 100, Side::BUY), fills, fc, 16);
+  ASSERT_TRUE(h.valid());
+  EXPECT_TRUE(book.cancel_by_token(h.to_token()));
+  EXPECT_EQ(book.best_bid_price(), INT64_MIN);
+}
+
+TEST(OrderBook, StaleTokenRejected)
+{
+  OrderBook<64, 1024> book{100, 1};
+  Fill                fills[16];
+  uint32_t            fc = 0;
+  OrderHandle h = book.add_order(make_order(1, 105, 100, Side::BUY), fills, fc, 16);
+  uint64_t    tok = h.to_token();
+  EXPECT_TRUE(book.cancel_by_token(tok));
+  EXPECT_FALSE(book.cancel_by_token(tok));  // stale: gen bumped on free
+}
