@@ -2,3 +2,8 @@ add_executable(net_test net_test.cc)
 target_include_directories(net_test PRIVATE ${URING_INCLUDE_DIRS})
 target_link_libraries(net_test PRIVATE GTest::gtest_main ${URING_LIBRARIES})
 add_test(NAME net COMMAND net_test)
+
+add_executable(gateway_test gateway_test.cc)
+target_include_directories(gateway_test PRIVATE ${URING_INCLUDE_DIRS})
+target_link_libraries(gateway_test PRIVATE GTest::gtest_main ${URING_LIBRARIES})
+add_test(NAME gateway COMMAND gateway_test)
