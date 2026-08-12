@@ -115,7 +115,9 @@ class Gateway
       int one = 1;
       ::setsockopt(cfd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
       add_epoll(cfd);
-      sessions_.try_emplace(cfd, cfd, next_session_id_++);
+      uint32_t sid = next_session_id_++;
+      sessions_.try_emplace(cfd, cfd, sid);
+      sid_to_fd_[sid] = cfd;  // reverse map for routing outbound replies
     }
   }
 
@@ -152,6 +154,9 @@ class Gateway
 
   void close_session(int fd)
   {
+    auto it = sessions_.find(fd);
+    if (it != sessions_.end())
+      sid_to_fd_.erase(it->second.session_id);
     ::epoll_ctl(epoll_fd_, EPOLL_CTL_DEL, fd, nullptr);
     ::close(fd);
     sessions_.erase(fd);
@@ -162,8 +167,11 @@ class Gateway
     proto::OutboundMsg out{};
     while (shard_.outbound().pop(out))
     {
-      for (auto& [fd, sess] : sessions_)
-        send_all(fd, &out, out.hdr.len);
+      // Route each reply to the session the engine stamped on it. If that
+      // client has since disconnected, the message is simply dropped.
+      auto it = sid_to_fd_.find(out.hdr.session_id);
+      if (it != sid_to_fd_.end())
+        send_all(it->second, &out, out.hdr.len);
     }
   }
 
@@ -192,6 +200,7 @@ class Gateway
   uint16_t                         port_ = 0;
   uint32_t                         next_session_id_ = 1;
   std::unordered_map<int, Session> sessions_;
+  std::unordered_map<uint32_t, int> sid_to_fd_;
   std::atomic<bool>                running_{true};
 };
 }  // namespace lx::net

@@ -135,10 +135,10 @@ TEST(Session, InvalidFrameClosesSession)
   SpscQueue<InboundMsg, 64> q;
   net::Session              s{0, 1};
 
-  // Corrupt header: len = 1 (below MIN_FRAME_LEN threshold)
-  std::byte buf[4]{};
+  // Corrupt header: a full 8-byte header with len = 1 (below MIN_FRAME_LEN)
+  std::byte buf[8]{};
   buf[0] = std::byte{1};  // len low byte = 1
-  s.append(buf, 4);
+  s.append(buf, 8);
   s.consume(q);
 
   EXPECT_TRUE(s.closed());

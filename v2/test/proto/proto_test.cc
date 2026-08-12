@@ -7,13 +7,13 @@ using namespace lx::proto;
 
 TEST(Messages, Sizes)
 {
-  static_assert(sizeof(Header) == 4);
+  static_assert(sizeof(Header) == 8);
   static_assert(sizeof(Logon) == 16);
   static_assert(sizeof(NewOrder) == 32);
   static_assert(sizeof(CancelOrder) == 16);
   static_assert(sizeof(Ack) == 24);
-  static_assert(sizeof(Reject) == 16);
-  static_assert(sizeof(Fill) == 32);
+  static_assert(sizeof(Reject) == 24);
+  static_assert(sizeof(Fill) == 40);
 }
 
 TEST(Messages, TriviallyCopiable)

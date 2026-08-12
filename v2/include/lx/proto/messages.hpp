@@ -38,67 +38,68 @@ enum class RejectReason : uint8_t
 // with no compiler padding — verified by static_assert below.
 // No #pragma pack needed: the layout is designed to be self-aligned.
 
-// ----- Header (4 bytes, every frame starts with this) -----
+// ----- Header (8 bytes: 4-byte frame info + gateway-assigned session id) -----
+// session_id is server-authoritative: the gateway stamps it from the actual
+// connection on ingress (overwriting whatever the client sent), and the engine
+// sets it on every outbound so the gateway can route the reply back.
 struct Header
 {
-  uint16_t len;
-  MsgType  type;
-  uint8_t  flags;
+  uint16_t len;            // offset 0, size 2
+  MsgType  type;           // offset 2, size 1
+  uint8_t  flags;          // offset 3, size 1
+  uint32_t session_id = 0; // offset 4, size 4 (default: unassigned)
 };
 
 // ------ Inbound Messages --------------
 
 struct Logon
 {
-  Header   hdr;        // offset 0, size 4
-  uint32_t session_id; // offset 4, size 4
-  uint64_t padding;    // offset 8, size 8
+  Header   hdr;     // offset 0, size 8
+  uint64_t padding; // offset 8, size 8
 };
 
 struct NewOrder
 {
-  Header      hdr;       // offset 0,  size 4
-  uint16_t    symbol_id; // offset 4,  size 2
-  Side        side;      // offset 6,  size 1
-  TimeInForce tif;       // offset 7,  size 1
-  uint64_t    order_id;  // offset 8,  size 8  (8-byte aligned ✓)
+  Header      hdr;       // offset 0,  size 8
+  uint64_t    order_id;  // offset 8,  size 8
   int64_t     price;     // offset 16, size 8
   uint32_t    qty;       // offset 24, size 4
-  uint32_t    padding;   // offset 28, size 4
+  uint16_t    symbol_id; // offset 28, size 2
+  Side        side;      // offset 30, size 1
+  TimeInForce tif;       // offset 31, size 1
 };
 
 struct CancelOrder
 {
-  Header   hdr;         // offset 0, size 4
-  uint32_t padding;     // offset 4, size 4
-  uint64_t order_token; // offset 8, size 8  (8-byte aligned ✓) — exchange-assigned
+  Header   hdr;         // offset 0, size 8
+  uint64_t order_token; // offset 8, size 8  — exchange-assigned
 };
 
 // ----- Outbound Messages --------------
 
 struct Ack
 {
-  Header   hdr;         // offset 0,  size 4
-  uint32_t padding;     // offset 4,  size 4
-  uint64_t order_id;    // offset 8,  size 8  (8-byte aligned ✓) — client's order_id
+  Header   hdr;         // offset 0,  size 8
+  uint64_t order_id;    // offset 8,  size 8  — client's order_id
   uint64_t order_token; // offset 16, size 8  — exchange-assigned handle for cancels
 };
 
 struct Reject
 {
-  Header       hdr;        // offset 0, size 4
-  RejectReason reason;     // offset 4, size 1
-  uint8_t      padding[3]; // offset 5, size 3
-  uint64_t     order_id;   // offset 8, size 8  (8-byte aligned ✓)
+  Header       hdr;        // offset 0,  size 8
+  uint64_t     order_id;   // offset 8,  size 8
+  RejectReason reason;     // offset 16, size 1
+  uint8_t      padding[7]; // offset 17, size 7
 };
 
 struct Fill
 {
-  Header   hdr;          // offset 0,  size 4
-  uint32_t qty;          // offset 4,  size 4
-  uint64_t aggressor_id; // offset 8,  size 8  (8-byte aligned ✓)
+  Header   hdr;          // offset 0,  size 8
+  uint64_t aggressor_id; // offset 8,  size 8
   uint64_t resting_id;   // offset 16, size 8
   int64_t  price;        // offset 24, size 8
+  uint32_t qty;          // offset 32, size 4
+  uint32_t padding = 0;  // offset 36, size 4
 };
 
 // ----- Tagged unions for the engine queues -----
@@ -122,13 +123,13 @@ union OutboundMsg
 };
 
 // ---- Compile-time layout verification ----
-static_assert(sizeof(Header)      == 4);
+static_assert(sizeof(Header)      == 8);
 static_assert(sizeof(Logon)       == 16);
 static_assert(sizeof(NewOrder)    == 32);
 static_assert(sizeof(CancelOrder) == 16);
 static_assert(sizeof(Ack)         == 24);
-static_assert(sizeof(Reject)      == 16);
-static_assert(sizeof(Fill)        == 32);
+static_assert(sizeof(Reject)      == 24);
+static_assert(sizeof(Fill)        == 40);
 
 static_assert(std::is_trivially_copyable_v<NewOrder>);
 static_assert(std::is_trivially_copyable_v<Fill>);

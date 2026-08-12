@@ -202,11 +202,11 @@ class OrderBook
 
         if (fill_count >= max_fills)
           return;
-        fills[fill_count++] = proto::Fill{{sizeof(proto::Fill), proto::MsgType::FILL, 0},
-                                          fill_qty,
-                                          aggressor.order_id,
-                                          resting.order_id,
-                                          resting.price};
+        fills[fill_count++] = proto::Fill{.hdr = {sizeof(proto::Fill), proto::MsgType::FILL, 0},
+                                          .aggressor_id = aggressor.order_id,
+                                          .resting_id = resting.order_id,
+                                          .price = resting.price,
+                                          .qty = fill_qty};
         level.total_qty -= fill_qty;
         aggressor.qty -= fill_qty;
         resting.qty -= fill_qty;

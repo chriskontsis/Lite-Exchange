@@ -52,12 +52,14 @@ struct Session
       {
         proto::InboundMsg msg{};
         std::memcpy(&msg.new_order, recv_buf_ + consumed, sizeof(proto::NewOrder));
+        msg.hdr.session_id = session_id;  // server-authoritative: overwrite client's value
         q.push(msg);
       }
       else if (type == proto::MsgType::CANCEL_ORDER && frame_len == sizeof(proto::CancelOrder))
       {
         proto::InboundMsg msg{};
         std::memcpy(&msg.cancel, recv_buf_ + consumed, sizeof(proto::CancelOrder));
+        msg.hdr.session_id = session_id;
         q.push(msg);
       }
 
