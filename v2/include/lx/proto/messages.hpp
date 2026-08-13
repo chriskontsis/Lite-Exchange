@@ -34,80 +34,67 @@ enum class RejectReason : uint8_t
   INVALID_QTY    = 2
 };
 
-// Fields are ordered so every multi-byte field sits at its natural alignment
-// with no compiler padding — verified by static_assert below.
-// No #pragma pack needed: the layout is designed to be self-aligned.
-
-// ----- Header (8 bytes: 4-byte frame info + gateway-assigned session id) -----
-// session_id is server-authoritative: the gateway stamps it from the actual
-// connection on ingress (overwriting whatever the client sent), and the engine
-// sets it on every outbound so the gateway can route the reply back.
+// Fields ordered for natural alignment with no padding (verified below).
+// session_id is server-assigned: the gateway stamps it on ingress and the
+// engine echoes it on every outbound so replies route back to the client.
 struct Header
 {
-  uint16_t len;            // offset 0, size 2
-  MsgType  type;           // offset 2, size 1
-  uint8_t  flags;          // offset 3, size 1
-  uint32_t session_id = 0; // offset 4, size 4 (default: unassigned)
+  uint16_t len;
+  MsgType  type;
+  uint8_t  flags;
+  uint32_t session_id = 0;
 };
-
-// ------ Inbound Messages --------------
 
 struct Logon
 {
-  Header   hdr;     // offset 0, size 8
-  uint64_t padding; // offset 8, size 8
+  Header   hdr;
+  uint64_t padding;
 };
 
 struct NewOrder
 {
-  Header      hdr;       // offset 0,  size 8
-  uint64_t    order_id;  // offset 8,  size 8
-  int64_t     price;     // offset 16, size 8
-  uint32_t    qty;       // offset 24, size 4
-  uint16_t    symbol_id; // offset 28, size 2
-  Side        side;      // offset 30, size 1
-  TimeInForce tif;       // offset 31, size 1
+  Header      hdr;
+  uint64_t    order_id;
+  int64_t     price;
+  uint32_t    qty;
+  uint16_t    symbol_id;
+  Side        side;
+  TimeInForce tif;
 };
 
 struct CancelOrder
 {
-  Header   hdr;         // offset 0, size 8
-  uint64_t order_token; // offset 8, size 8  — exchange-assigned
+  Header   hdr;
+  uint64_t order_token;  // exchange-assigned
 };
-
-// ----- Outbound Messages --------------
 
 struct Ack
 {
-  Header   hdr;         // offset 0,  size 8
-  uint64_t order_id;    // offset 8,  size 8  — client's order_id
-  uint64_t order_token; // offset 16, size 8  — exchange-assigned handle for cancels
+  Header   hdr;
+  uint64_t order_id;     // client's
+  uint64_t order_token;  // exchange handle for cancels
 };
 
 struct Reject
 {
-  Header       hdr;        // offset 0,  size 8
-  uint64_t     order_id;   // offset 8,  size 8
-  RejectReason reason;     // offset 16, size 1
-  uint8_t      padding[7]; // offset 17, size 7
+  Header       hdr;
+  uint64_t     order_id;
+  RejectReason reason;
+  uint8_t      padding[7];
 };
 
 struct Fill
 {
-  Header   hdr;          // offset 0,  size 8
-  uint64_t aggressor_id; // offset 8,  size 8
-  uint64_t resting_id;   // offset 16, size 8
-  int64_t  price;        // offset 24, size 8
-  uint32_t qty;          // offset 32, size 4
-  uint32_t padding = 0;  // offset 36, size 4
+  Header   hdr;
+  uint64_t aggressor_id;
+  uint64_t resting_id;
+  int64_t  price;
+  uint32_t qty;
+  uint32_t padding = 0;
 };
 
-// ----- Tagged unions for the engine queues -----
-// Every message begins with Header at offset 0, so `hdr.type` is readable
-// through any union member (common-initial-sequence rule for standard-layout
-// structs). Cancels share the inbound queue with new orders so a cancel can
-// never overtake the order it targets — FIFO ordering is a correctness need.
-
+// hdr.type is readable through any member (common initial sequence). New orders
+// and cancels share one queue so a cancel can't overtake the order it targets.
 union InboundMsg
 {
   Header      hdr;

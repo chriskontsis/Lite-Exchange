@@ -20,9 +20,7 @@ class Shard
     if (!inbound_.pop(msg))
       return;
 
-    // Dispatch on the type tag in the shared Header (common initial sequence).
-    // session_id was stamped by the gateway; every reply routes back to it.
-    uint32_t session_id = msg.hdr.session_id;
+    uint32_t session_id = msg.hdr.session_id;  // stamped by the gateway
     switch (msg.hdr.type)
     {
       case proto::MsgType::NEW_ORDER:
@@ -32,7 +30,7 @@ class Shard
         handle_cancel(msg.cancel, session_id);
         break;
       default:
-        break;  // unknown type: drop (gateway validates, but stay defensive)
+        break;  // unknown type: drop
     }
   }
 
@@ -57,15 +55,10 @@ class Shard
     uint32_t    fill_count = 0;
     book::OrderHandle h = book_.add_order(order, fills, fill_count, 64);
 
-    // Step A: the aggressor's fills and the Ack route back to the sender. The
-    // passive side of each fill (the resting owner) is routed in Step B once
-    // the order stores its owner session.
     for (uint32_t i = 0; i < fill_count; ++i)
       emit_fill(fills[i], session_id);
 
-    // A resting order gets an Ack carrying the token the client uses to cancel;
-    // a fully-filled or IOC-killed order has nothing to cancel, so no Ack.
-    if (h.valid())
+    if (h.valid())  // resting order: Ack carries the cancel token
       emit_ack(order.order_id, h.to_token(), session_id);
   }
 
@@ -79,13 +72,12 @@ class Shard
 
   void emit_fill(const proto::Fill& fill, uint32_t aggressor_session)
   {
-    // The book addressed the fill to the passive owner; send that verbatim.
+    // The book addressed the fill to the passive owner; send it verbatim.
     proto::OutboundMsg passive{};
     passive.fill = fill;
     push_out(passive);
 
-    // Send the aggressor its own copy — unless it's the same session (a
-    // self-trade), where one report already identifies both legs.
+    // Aggressor's copy, unless it's the same session (self-trade: one report).
     if (aggressor_session != fill.hdr.session_id)
     {
       proto::OutboundMsg agg{};
@@ -110,7 +102,6 @@ class Shard
     proto::OutboundMsg m{};
     m.hdr = {sizeof(proto::Reject), proto::MsgType::REJECT, 0};
     m.hdr.session_id = session_id;
-    // Reject shares only the Header prefix here; token echo lives in ack path.
     (void)token;
     push_out(m);
   }

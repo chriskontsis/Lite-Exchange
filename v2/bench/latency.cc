@@ -57,8 +57,7 @@ int main()
 
   lx::proto::OutboundMsg out{};
 
-  // Each iteration: push one resting sell and drain its Ack (untimed), then
-  // push a matching buy and measure round-trip to the Fill.
+  // Rest a sell and drain its Ack (untimed), then time a matching buy to Fill.
   for (int i = 0; i < TOTAL; ++i)
   {
     // Place resting sell, wait for its Ack so the book is primed.

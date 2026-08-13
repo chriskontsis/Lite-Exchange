@@ -1,15 +1,7 @@
-// Throughput: aggregate orders/sec through the gateway with many concurrent
-// connections. This is the axis where io_uring should beat epoll — with N
-// connections ready at once, epoll issues ~1 recv + 1 send syscall per
-// connection per wake, while io_uring batches them (or, under SQPOLL, makes
-// none in the hot loop).
-//
-// Load model: LOADERS threads, each owning CONNS/LOADERS connections. Per round
-// a loader bursts PIPELINE resting orders on *every* one of its connections,
-// then drains that many acks — so all its fds are simultaneously readable at
-// the gateway, maximising batch size.
-//
-// Usage: gateway_throughput [epoll|uring|sqpoll]
+// Aggregate orders/sec through the gateway under many concurrent connections —
+// the axis where io_uring's syscall batching beats epoll. Each loader bursts a
+// pipeline of orders across all its connections then drains the acks, so many
+// fds are readable at once. Usage: gateway_throughput [epoll|uring|sqpoll]
 
 #include <arpa/inet.h>
 #include <netinet/in.h>

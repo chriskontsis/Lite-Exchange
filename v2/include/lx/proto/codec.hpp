@@ -16,8 +16,7 @@ enum class DecodeResult : uint8_t
   INVALID
 };
 
-// Inspec avail bytes at buf, on OK, sets 'type' and 'frame_len'
-// caller advances the buffer by frame_len and reinterpret_cast
+// On OK, sets type/frame_len; caller advances the buffer by frame_len.
 inline DecodeResult tryDecode(const std::byte* buf, std::size_t avail, MsgType& type,
                               uint16_t& frame_len)
 {

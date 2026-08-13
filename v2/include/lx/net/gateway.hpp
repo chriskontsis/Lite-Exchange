@@ -18,11 +18,7 @@
 
 namespace lx::net
 {
-/* Single thread epoll bridging client sockets to a Shard.
-/ client bytes -> Session::consume -> shard.inbound()
-/ shard.outbound() -> encode -> send() to client
-*/
-
+// Single-threaded epoll reactor bridging client sockets to a Shard.
 template <typename Shard>
 class Gateway
 {
@@ -167,8 +163,7 @@ class Gateway
     proto::OutboundMsg out{};
     while (shard_.outbound().pop(out))
     {
-      // Route each reply to the session the engine stamped on it. If that
-      // client has since disconnected, the message is simply dropped.
+      // Route to the stamped session; drop if that client has disconnected.
       auto it = sid_to_fd_.find(out.hdr.session_id);
       if (it != sid_to_fd_.end())
         send_all(it->second, &out, out.hdr.len);

@@ -46,16 +46,13 @@ struct Session
         closed_ = true;
         break;
       }
-      // Both order types normalise into one InboundMsg so they share a single
-      // ordered queue — a cancel can never overtake the order it targets.
-      // Backpressure: if the inbound queue is full, stop and leave this frame in
-      // the recv buffer to retry on the next consume() — never silently drop a
-      // decoded order (the client would get no ack and the order would vanish).
+      // Both types share one ordered queue; on a full queue leave the frame
+      // buffered and retry next consume() rather than dropping it.
       if (type == proto::MsgType::NEW_ORDER && frame_len == sizeof(proto::NewOrder))
       {
         proto::InboundMsg msg{};
         std::memcpy(&msg.new_order, recv_buf_ + consumed, sizeof(proto::NewOrder));
-        msg.hdr.session_id = session_id;  // server-authoritative: overwrite client's value
+        msg.hdr.session_id = session_id;  // server-assigned; overwrite client value
         if (!q.push(msg))
           break;
       }

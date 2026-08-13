@@ -19,9 +19,8 @@ struct OrderHandle
   uint32_t                  gen = 0;
   bool valid() const { return slot != INVALID; }
 
-  // Exchange-assigned opaque token: gen in high 32 bits, slot in low 32.
-  // Clients echo this back to cancel; the gen half makes stale tokens
-  // (slot reused after free) detectable — the ABA guard travels on the wire.
+  // Opaque cancel token: gen<<32 | slot. The gen half rejects stale tokens
+  // (slot reused after free) — the ABA guard on the wire.
   uint64_t to_token() const
   {
     return (static_cast<uint64_t>(gen) << 32) | slot;
@@ -44,7 +43,7 @@ class OrderBook
   {
   }
 
-  // Returns a valid OrderHandle if the order rests; invalid handle if filled or error.
+  // Valid handle if the order rests; invalid if filled or rejected.
   OrderHandle add_order(const proto::NewOrder& msg, proto::Fill* fills, uint32_t& fill_count,
                         uint32_t max_fills)
   {

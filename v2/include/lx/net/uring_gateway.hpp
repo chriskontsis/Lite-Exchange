@@ -17,14 +17,8 @@
 
 namespace lx::net
 {
-// Completion-based (io_uring) reactor bridging client sockets to a Shard.
-// Same public interface and routing model as the epoll Gateway, but the I/O
-// layer is inverted: instead of "wait for readiness then recv", we submit ops
-// and process completions where the bytes have already been delivered.
-//
-// Iteration 1: multishot accept, single-shot recv (re-armed), io_uring send.
-// Later: RECV_MULTISHOT + registered buffer ring (kill the double copy) and
-// SQPOLL (kill the submit syscall).
+// io_uring reactor bridging client sockets to a Shard. Same interface/routing
+// as the epoll Gateway; multishot accept, single-shot recv, io_uring send.
 template <typename Shard>
 class UringGateway
 {
@@ -33,8 +27,7 @@ class UringGateway
   static constexpr uint32_t SEND_SLOTS  = 512;
   static constexpr uint32_t INVALID_SLOT = UINT32_MAX;
 
-  // sqpoll: kernel thread polls the SQ so the hot loop makes no submit syscall.
-  // sq_cpu: pin that poll thread to a core (UINT32_MAX = let the kernel choose).
+  // sqpoll: kernel thread polls the SQ (no submit syscall). sq_cpu pins it.
   UringGateway(Shard& shard, uint16_t port, bool sqpoll = false,
                uint32_t sq_cpu = UINT32_MAX)
       : shard_(shard)
@@ -63,7 +56,7 @@ class UringGateway
     if (sqpoll)
     {
       params.flags = IORING_SETUP_SQPOLL;
-      params.sq_thread_idle = 2000;  // ms the poll thread stays awake while idle
+      params.sq_thread_idle = 2000;  // ms awake while idle
       if (sq_cpu != UINT32_MAX)
       {
         params.flags |= IORING_SETUP_SQ_AFF;
@@ -97,15 +90,15 @@ class UringGateway
 
   void poll_once(int timeout_ms)
   {
-    drain_outbound();          // outbound queue -> send SQEs
-    io_uring_submit(&ring_);   // publish all prepared SQEs
+    drain_outbound();
+    io_uring_submit(&ring_);
 
     if (timeout_ms > 0)
     {
       io_uring_cqe*     cqe = nullptr;
       __kernel_timespec ts{.tv_sec = timeout_ms / 1000,
                            .tv_nsec = static_cast<long long>(timeout_ms % 1000) * 1'000'000LL};
-      io_uring_wait_cqe_timeout(&ring_, &cqe, &ts);  // block up to timeout for >=1 CQE
+      io_uring_wait_cqe_timeout(&ring_, &cqe, &ts);
     }
 
     unsigned      head;
@@ -128,7 +121,7 @@ class UringGateway
   void stop() { running_.store(false, std::memory_order_relaxed); }
 
  private:
-  // ----- user_data tagging: top byte = op, low bytes = fd or send slot -----
+  // user_data: top byte = op, low bytes = fd or send slot.
   enum Op : uint8_t
   {
     OP_ACCEPT = 0,
@@ -149,11 +142,8 @@ class UringGateway
   io_uring_sqe* get_sqe()
   {
     io_uring_sqe* sqe = io_uring_get_sqe(&ring_);
-    while (!sqe)
+    while (!sqe)  // ring full: submit to drain it, then retry (never return null)
     {
-      // Ring full. Submitting drains it: synchronously without SQPOLL, or by
-      // nudging the kernel poll thread with it. Spin until an SQE frees so we
-      // never return null for a caller to dereference.
       io_uring_submit(&ring_);
       sqe = io_uring_get_sqe(&ring_);
     }
@@ -204,8 +194,7 @@ class UringGateway
       sid_to_fd_[sid] = cfd;
       arm_recv(cfd);
     }
-    // Multishot terminates if the kernel drops F_MORE; re-arm to keep accepting.
-    if (!(cqe->flags & IORING_CQE_F_MORE))
+    if (!(cqe->flags & IORING_CQE_F_MORE))  // multishot ended: re-arm
       arm_accept();
   }
 
@@ -214,7 +203,7 @@ class UringGateway
     auto it = conns_.find(fd);
     if (it == conns_.end())
       return;
-    if (res <= 0)  // 0 = peer closed, <0 = error
+    if (res <= 0)  // peer closed or error
     {
       close_conn(fd);
       return;
@@ -227,7 +216,7 @@ class UringGateway
       close_conn(fd);
       return;
     }
-    arm_recv(fd);  // single-shot: re-arm for the next chunk
+    arm_recv(fd);
   }
 
   void close_conn(int fd)
@@ -246,7 +235,7 @@ class UringGateway
     {
       auto it = sid_to_fd_.find(out.hdr.session_id);
       if (it == sid_to_fd_.end())
-        continue;  // client disconnected
+        continue;  // client gone
       int      fd = it->second;
       uint32_t slot = alloc_send_slot();
       if (slot == INVALID_SLOT)
@@ -254,7 +243,7 @@ class UringGateway
         ::send(fd, &out, out.hdr.len, MSG_NOSIGNAL);  // pool full: blocking fallback
         continue;
       }
-      send_pool_[slot] = out;  // stable storage until the send completes
+      send_pool_[slot] = out;  // hold until the send completes
       io_uring_sqe* sqe = get_sqe();
       io_uring_prep_send(sqe, fd, &send_pool_[slot], out.hdr.len, MSG_NOSIGNAL);
       io_uring_sqe_set_data64(sqe, tag(OP_SEND, slot));

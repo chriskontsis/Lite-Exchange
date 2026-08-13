@@ -1,10 +1,6 @@
-// Order-to-ack round-trip latency through the epoll gateway over a real
-// loopback TCP socket. Establishes the epoll baseline for the io_uring swap.
-//
-// Closed-loop client (one order in flight): send a resting NewOrder, wait for
-// its Ack, measure. The gateway busy-polls (poll_once(0)) so the reply isn't
-// stalled behind a blocking epoll_wait while the shard produces it — this is
-// how a real HFT gateway runs, and it measures the true reactor cost.
+// Order-to-ack latency through the epoll gateway over loopback TCP. Closed-loop
+// client (one order in flight); the gateway busy-polls (poll_once(0)) so the
+// reply isn't stalled behind a blocking epoll_wait. epoll baseline for 11b.
 
 #include <arpa/inet.h>
 #include <hdr/hdr_histogram.h>

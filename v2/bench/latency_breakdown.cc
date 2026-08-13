@@ -1,20 +1,8 @@
-// Round-trip latency breakdown.
-//
-// Splits the order-to-fill round trip into three segments using cross-core
-// rdtscp stamps (valid here: constant_tsc + nonstop_tsc, kernel clocksource=tsc):
-//
-//   t0  bench : before push(inbound)
-//   t1  shard : after  pop(inbound)      -> A = inbound transit + poll lag
-//   t2  shard : after  add_order()       -> B = match compute
-//   t3  shard : before push(outbound)
-//   t4  bench : after  pop(outbound)     -> C = outbound transit + poll lag
-//
-// The shard writes t1/t2/t3 into the StampedFill; the outbound push (release)
-// / pop (acquire) publishes them to the bench with no extra synchronisation.
-//
-// Each iteration first rests a sell and waits for its ack, so the queue is
-// empty and the book primed before the timed buy — segment A then measures a
-// clean transit, not queueing behind the resting order.
+// Order-to-fill breakdown via cross-core rdtscp stamps:
+//   A = inbound transit (t0..t1), B = match compute (t1..t2),
+//   C = outbound transit (t3..t4). Stamps ride in the StampedFill.
+// Each iteration rests a sell and drains its ack first, so A measures a clean
+// transit rather than queueing behind the resting order.
 
 #include <hdr/hdr_histogram.h>
 
