@@ -118,6 +118,50 @@ TEST(Gateway, OutboundRoutedToOriginatingClient)
   shard_thread.join();
 }
 
+TEST(Gateway, FillRoutedToBothParties)
+{
+  TestShard               shard{100, 1};
+  net::Gateway<TestShard> gw{shard, /*port*/ 0};
+  uint16_t                port = gw.port();
+  ASSERT_NE(port, 0);
+
+  std::thread shard_thread([&] { shard.run(); });
+  std::thread gw_thread([&] { gw.run(); });
+
+  int a = connect_client(port);
+  int b = connect_client(port);
+
+  // Client A rests a sell and reads its resting Ack.
+  NewOrder sell = make_order(1, 105, 50, Side::SELL);
+  ASSERT_EQ(::send(a, &sell, sizeof(sell), 0), static_cast<ssize_t>(sizeof(sell)));
+  Ack ack{};
+  ASSERT_EQ(::recv(a, &ack, sizeof(ack), MSG_WAITALL), static_cast<ssize_t>(sizeof(Ack)));
+  ASSERT_EQ(ack.hdr.type, MsgType::ACK);
+
+  // Client B aggresses, fully matching A's sell.
+  NewOrder buy = make_order(2, 105, 50, Side::BUY);
+  ASSERT_EQ(::send(b, &buy, sizeof(buy), 0), static_cast<ssize_t>(sizeof(buy)));
+
+  // The aggressor (B) receives its fill.
+  Fill bf{};
+  EXPECT_EQ(::recv(b, &bf, sizeof(bf), MSG_WAITALL), static_cast<ssize_t>(sizeof(Fill)));
+  EXPECT_EQ(bf.hdr.type, MsgType::FILL);
+
+  // The passive owner (A) must ALSO receive a fill for the same trade.
+  Fill af{};
+  EXPECT_EQ(::recv(a, &af, sizeof(af), MSG_WAITALL), static_cast<ssize_t>(sizeof(Fill)));
+  EXPECT_EQ(af.hdr.type, MsgType::FILL);
+  EXPECT_EQ(af.resting_id, uint64_t{1});
+  EXPECT_EQ(af.aggressor_id, uint64_t{2});
+
+  ::close(a);
+  ::close(b);
+  gw.stop();
+  shard.stop();
+  gw_thread.join();
+  shard_thread.join();
+}
+
 TEST(Gateway, CancelOverWireRemovesOrder)
 {
   TestShard               shard{100, 1};

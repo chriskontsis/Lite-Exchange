@@ -77,12 +77,22 @@ class Shard
       emit_reject(cancel.order_token, session_id);
   }
 
-  void emit_fill(const proto::Fill& fill, uint32_t session_id)
+  void emit_fill(const proto::Fill& fill, uint32_t aggressor_session)
   {
-    proto::OutboundMsg m{};
-    m.fill = fill;
-    m.hdr.session_id = session_id;
-    push_out(m);
+    // The book addressed the fill to the passive owner; send that verbatim.
+    proto::OutboundMsg passive{};
+    passive.fill = fill;
+    push_out(passive);
+
+    // Send the aggressor its own copy — unless it's the same session (a
+    // self-trade), where one report already identifies both legs.
+    if (aggressor_session != fill.hdr.session_id)
+    {
+      proto::OutboundMsg agg{};
+      agg.fill = fill;
+      agg.hdr.session_id = aggressor_session;
+      push_out(agg);
+    }
   }
 
   void emit_ack(uint64_t order_id, uint64_t token, uint32_t session_id)

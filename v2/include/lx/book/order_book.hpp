@@ -66,6 +66,7 @@ class OrderBook
     o.tif = msg.tif;
     o.next_idx = NULL_IDX;
     o.prev_idx = NULL_IDX;
+    order_session_[slot] = msg.hdr.session_id;  // owner, for routing passive fills
 
     fill_count = 0;
 
@@ -158,6 +159,7 @@ class OrderBook
   Pool<Order, MAX_ORDERS>  pool_;
   LevelBitmap<LADDER_SIZE> bid_occ_;
   LevelBitmap<LADDER_SIZE> ask_occ_;
+  uint32_t                 order_session_[MAX_ORDERS]{};  // owner session per slot
 
   int32_t price_to_idx(int64_t price) const
   {
@@ -202,11 +204,13 @@ class OrderBook
 
         if (fill_count >= max_fills)
           return;
-        fills[fill_count++] = proto::Fill{.hdr = {sizeof(proto::Fill), proto::MsgType::FILL, 0},
-                                          .aggressor_id = aggressor.order_id,
-                                          .resting_id = resting.order_id,
-                                          .price = resting.price,
-                                          .qty = fill_qty};
+        proto::Fill f{.hdr = {sizeof(proto::Fill), proto::MsgType::FILL, 0},
+                      .aggressor_id = aggressor.order_id,
+                      .resting_id = resting.order_id,
+                      .price = resting.price,
+                      .qty = fill_qty};
+        f.hdr.session_id = order_session_[rslot];  // address to the passive owner
+        fills[fill_count++] = f;
         level.total_qty -= fill_qty;
         aggressor.qty -= fill_qty;
         resting.qty -= fill_qty;
