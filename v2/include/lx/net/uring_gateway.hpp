@@ -29,7 +29,7 @@ template <typename Shard>
 class UringGateway
 {
  public:
-  static constexpr unsigned RING_DEPTH  = 256;
+  static constexpr unsigned RING_DEPTH  = 2048;  // > max SQEs prepared per poll_once
   static constexpr uint32_t SEND_SLOTS  = 512;
   static constexpr uint32_t INVALID_SLOT = UINT32_MAX;
 
@@ -149,9 +149,12 @@ class UringGateway
   io_uring_sqe* get_sqe()
   {
     io_uring_sqe* sqe = io_uring_get_sqe(&ring_);
-    if (!sqe)
+    while (!sqe)
     {
-      io_uring_submit(&ring_);  // ring full: flush and retry
+      // Ring full. Submitting drains it: synchronously without SQPOLL, or by
+      // nudging the kernel poll thread with it. Spin until an SQE frees so we
+      // never return null for a caller to dereference.
+      io_uring_submit(&ring_);
       sqe = io_uring_get_sqe(&ring_);
     }
     return sqe;
