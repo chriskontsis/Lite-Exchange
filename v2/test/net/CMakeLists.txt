@@ -7,3 +7,8 @@ add_executable(gateway_test gateway_test.cc)
 target_include_directories(gateway_test PRIVATE ${URING_INCLUDE_DIRS})
 target_link_libraries(gateway_test PRIVATE GTest::gtest_main ${URING_LIBRARIES})
 add_test(NAME gateway COMMAND gateway_test)
+
+add_executable(uring_gateway_test uring_gateway_test.cc)
+target_include_directories(uring_gateway_test PRIVATE ${URING_INCLUDE_DIRS})
+target_link_libraries(uring_gateway_test PRIVATE GTest::gtest_main ${URING_LIBRARIES})
+add_test(NAME uring_gateway COMMAND uring_gateway_test)

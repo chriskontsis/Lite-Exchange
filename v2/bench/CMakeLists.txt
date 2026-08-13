@@ -16,3 +16,12 @@ target_compile_options(latency_bench PRIVATE -O3 -march=native -fno-omit-frame-p
 add_executable(latency_breakdown latency_breakdown.cc)
 target_link_libraries(latency_breakdown PRIVATE hdr_histogram_static)
 target_compile_options(latency_breakdown PRIVATE -O3 -march=native -fno-omit-frame-pointer)
+
+add_executable(gateway_latency gateway_latency.cc)
+target_link_libraries(gateway_latency PRIVATE hdr_histogram_static)
+target_compile_options(gateway_latency PRIVATE -O3 -march=native -fno-omit-frame-pointer)
+
+add_executable(gateway_latency_uring gateway_latency_uring.cc)
+target_include_directories(gateway_latency_uring PRIVATE ${URING_INCLUDE_DIRS})
+target_link_libraries(gateway_latency_uring PRIVATE hdr_histogram_static ${URING_LIBRARIES})
+target_compile_options(gateway_latency_uring PRIVATE -O3 -march=native -fno-omit-frame-pointer)
