@@ -27,6 +27,32 @@ static CancelOrder make_cancel(uint64_t token)
   return msg;
 }
 
+TEST(Session, BackpressureDoesNotDropFrames)
+{
+  SpscQueue<InboundMsg, 4> q;  // holds 4
+  net::Session             s{0, 1};
+
+  // Five orders into a queue that holds four: the fifth must not be lost.
+  std::byte buf[sizeof(NewOrder) * 5];
+  for (int i = 0; i < 5; ++i)
+  {
+    NewOrder o = make_order(static_cast<uint64_t>(i + 1), 100, 1, Side::BUY);
+    std::memcpy(buf + i * sizeof(NewOrder), &o, sizeof(NewOrder));
+  }
+  s.append(buf, sizeof(buf));
+
+  EXPECT_EQ(s.consume(q), 4u);  // only four fit; the fifth stays buffered
+
+  // Drain the queue, then consume again — the fifth order must appear.
+  InboundMsg m{};
+  for (int i = 0; i < 4; ++i)
+    ASSERT_TRUE(q.pop(m));
+
+  EXPECT_EQ(s.consume(q), 1u);
+  ASSERT_TRUE(q.pop(m));
+  EXPECT_EQ(m.new_order.order_id, uint64_t{5});
+}
+
 TEST(Session, CompleteFrameDispatched)
 {
   SpscQueue<InboundMsg, 64> q;
