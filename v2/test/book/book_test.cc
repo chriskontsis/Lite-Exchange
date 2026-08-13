@@ -233,6 +233,16 @@ TEST(OrderBook, TokenRoundTrip)
   EXPECT_EQ(back.gen, 3u);
 }
 
+TEST(OrderBook, TokenCarriesShard)
+{
+  OrderHandle h{7, 3};
+  uint64_t    t = h.to_token(5);
+  EXPECT_EQ(OrderHandle::token_shard(t), 5u);
+  OrderHandle back = OrderHandle::from_token(t);  // shard bits ignored
+  EXPECT_EQ(back.slot, 7u);
+  EXPECT_EQ(back.gen, 3u);
+}
+
 TEST(OrderBook, CancelByToken)
 {
   OrderBook<64, 1024> book{100, 1};

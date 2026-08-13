@@ -12,7 +12,10 @@ template <uint32_t MAX_ORDERS, uint32_t LADDER_SIZE, uint32_t QUEUE_DEPTH>
 class Shard
 {
  public:
-  Shard(int64_t base_price, int64_t tick_size) : book_(base_price, tick_size) {}
+  Shard(int64_t base_price, int64_t tick_size, uint8_t shard_id = 0)
+      : book_(base_price, tick_size), shard_id_(shard_id)
+  {
+  }
 
   void tick()
   {
@@ -59,7 +62,7 @@ class Shard
       emit_fill(fills[i], session_id);
 
     if (h.valid())  // resting order: Ack carries the cancel token
-      emit_ack(order.order_id, h.to_token(), session_id);
+      emit_ack(order.order_id, h.to_token(shard_id_), session_id);
   }
 
   void handle_cancel(const proto::CancelOrder& cancel, uint32_t session_id)
@@ -116,5 +119,6 @@ class Shard
   SpscQueue<proto::InboundMsg, QUEUE_DEPTH>  inbound_;
   SpscQueue<proto::OutboundMsg, QUEUE_DEPTH> outbound_;
   std::atomic<bool>                          running_{true};
+  uint8_t                                    shard_id_;
 };
 }  // namespace lx::engine

@@ -19,17 +19,20 @@ struct OrderHandle
   uint32_t                  gen = 0;
   bool valid() const { return slot != INVALID; }
 
-  // Opaque cancel token: gen<<32 | slot. The gen half rejects stale tokens
-  // (slot reused after free) — the ABA guard on the wire.
-  uint64_t to_token() const
+  // Opaque cancel token: [63:56] shard | [55:24] gen | [23:0] slot. The gen
+  // rejects stale tokens (ABA guard); the shard routes cancels to their book.
+  uint64_t to_token(uint8_t shard = 0) const
   {
-    return (static_cast<uint64_t>(gen) << 32) | slot;
+    return (static_cast<uint64_t>(shard) << 56) | (static_cast<uint64_t>(gen) << 24) |
+           (static_cast<uint64_t>(slot) & 0xFFFFFF);
   }
 
   static OrderHandle from_token(uint64_t token)
   {
-    return {static_cast<uint32_t>(token & 0xFFFFFFFF), static_cast<uint32_t>(token >> 32)};
+    return {static_cast<uint32_t>(token & 0xFFFFFF), static_cast<uint32_t>((token >> 24) & 0xFFFFFFFF)};
   }
+
+  static uint8_t token_shard(uint64_t token) { return static_cast<uint8_t>(token >> 56); }
 };
 template <uint32_t MAX_ORDERS, uint32_t LADDER_SIZE>
 class OrderBook
