@@ -7,17 +7,17 @@ namespace lx::proto
 // ---------- Wire Types ----------
 enum class MsgType : uint8_t
 {
-  LOGON        = 0x01,
-  NEW_ORDER    = 0x02,
+  LOGON = 0x01,
+  NEW_ORDER = 0x02,
   CANCEL_ORDER = 0x03,
-  ACK          = 0x81,
-  REJECT       = 0x82,
-  FILL         = 0x83,
+  ACK = 0x81,
+  REJECT = 0x82,
+  FILL = 0x83,
 };
 
 enum class Side : uint8_t
 {
-  BUY  = 0,
+  BUY = 0,
   SELL = 1
 };
 
@@ -30,8 +30,9 @@ enum class TimeInForce : uint8_t
 enum class RejectReason : uint8_t
 {
   UNKNOWN_SYMBOL = 0,
-  INVALID_PRICE  = 1,
-  INVALID_QTY    = 2
+  INVALID_PRICE = 1,
+  INVALID_QTY = 2,
+  UNKNOWN_ORDER = 3  // cancel token names no live order (stale or forged)
 };
 
 // Fields ordered for natural alignment with no padding (verified below).
@@ -106,17 +107,18 @@ union OutboundMsg
 {
   Header hdr;
   Ack    ack;
+  Reject reject;
   Fill   fill;
 };
 
 // ---- Compile-time layout verification ----
-static_assert(sizeof(Header)      == 8);
-static_assert(sizeof(Logon)       == 16);
-static_assert(sizeof(NewOrder)    == 32);
+static_assert(sizeof(Header) == 8);
+static_assert(sizeof(Logon) == 16);
+static_assert(sizeof(NewOrder) == 32);
 static_assert(sizeof(CancelOrder) == 16);
-static_assert(sizeof(Ack)         == 24);
-static_assert(sizeof(Reject)      == 24);
-static_assert(sizeof(Fill)        == 40);
+static_assert(sizeof(Ack) == 24);
+static_assert(sizeof(Reject) == 24);
+static_assert(sizeof(Fill) == 40);
 
 static_assert(std::is_trivially_copyable_v<NewOrder>);
 static_assert(std::is_trivially_copyable_v<Fill>);

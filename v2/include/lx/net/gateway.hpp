@@ -18,13 +18,13 @@
 
 namespace lx::net
 {
-// Single-threaded epoll reactor bridging client sockets to a Shard.
-template <typename Shard>
+// Single-threaded epoll reactor bridging client sockets to a ShardSet.
+template <typename Shards>
 class Gateway
 {
  public:
   static constexpr int MAX_EVENTS = 64;
-  Gateway(Shard& shard, uint16_t port) : shard_(shard)
+  Gateway(Shards& shards, uint16_t port) : shards_(shards)
   {
     listen_fd_ = ::socket(AF_INET, SOCK_STREAM, 0);
     if (listen_fd_ < 0)
@@ -131,7 +131,7 @@ class Gateway
       if (r > 0)
       {
         sees.append(buf, static_cast<uint32_t>(r));
-        sees.consume(shard_.inbound());
+        sees.consume(shards_.router());
       }
       else if (r == 0)
       {
@@ -161,12 +161,15 @@ class Gateway
   void drain_outbound()
   {
     proto::OutboundMsg out{};
-    while (shard_.outbound().pop(out))
+    for (uint32_t s = 0; s < Shards::SHARDS; ++s)
     {
-      // Route to the stamped session; drop if that client has disconnected.
-      auto it = sid_to_fd_.find(out.hdr.session_id);
-      if (it != sid_to_fd_.end())
-        send_all(it->second, &out, out.hdr.len);
+      while (shards_.outbound(s).pop(out))
+      {
+        // Route to the stamped session; drop if that client has disconnected.
+        auto it = sid_to_fd_.find(out.hdr.session_id);
+        if (it != sid_to_fd_.end())
+          send_all(it->second, &out, out.hdr.len);
+      }
     }
   }
 
@@ -189,13 +192,13 @@ class Gateway
     ::fcntl(fd, F_SETFL, flags | O_NONBLOCK);
   }
 
-  Shard&                           shard_;
-  int                              listen_fd_ = -1;
-  int                              epoll_fd_ = -1;
-  uint16_t                         port_ = 0;
-  uint32_t                         next_session_id_ = 1;
-  std::unordered_map<int, Session> sessions_;
+  Shards&                           shards_;
+  int                               listen_fd_ = -1;
+  int                               epoll_fd_ = -1;
+  uint16_t                          port_ = 0;
+  uint32_t                          next_session_id_ = 1;
+  std::unordered_map<int, Session>  sessions_;
   std::unordered_map<uint32_t, int> sid_to_fd_;
-  std::atomic<bool>                running_{true};
+  std::atomic<bool>                 running_{true};
 };
 }  // namespace lx::net

@@ -8,6 +8,25 @@
 using namespace lx::book;
 using namespace lx::proto;
 
+// An OrderBook borrows its arena from the owning shard. These tests exercise a
+// book on its own, so this pairs one with storage of its own. The storage base
+// is listed first so it is fully constructed before OrderBook binds to it.
+template <uint32_t MAX_ORDERS>
+struct BookStorage
+{
+  Pool<Order, MAX_ORDERS> pool;
+  uint32_t                order_session[MAX_ORDERS]{};
+};
+
+template <uint32_t MAX_ORDERS, uint32_t LADDER_SIZE>
+struct StandaloneBook : private BookStorage<MAX_ORDERS>, public OrderBook<MAX_ORDERS, LADDER_SIZE>
+{
+  StandaloneBook(int64_t base_price, int64_t tick_size)
+      : OrderBook<MAX_ORDERS, LADDER_SIZE>(base_price, tick_size, this->pool, this->order_session)
+  {
+  }
+};
+
 TEST(Order, SizeIs32)
 {
   static_assert(sizeof(Order) == 32);
@@ -130,9 +149,9 @@ static NewOrder make_order(uint64_t oid, int64_t price, uint32_t qty, Side side,
 
 TEST(OrderBook, PassiveBuyPlaced)
 {
-  OrderBook<64, 1024> book{100, 1};
-  Fill                fills[16];
-  uint32_t            fc = 0;
+  StandaloneBook<64, 1024> book{100, 1};
+  Fill                     fills[16];
+  uint32_t                 fc = 0;
 
   EXPECT_TRUE(book.add_order(make_order(1, 105, 100, Side::BUY), fills, fc, 16).valid());
   EXPECT_EQ(fc, 0u);
@@ -142,9 +161,9 @@ TEST(OrderBook, PassiveBuyPlaced)
 
 TEST(OrderBook, PassiveSellPlaced)
 {
-  OrderBook<64, 1024> book{100, 1};
-  Fill                fills[16];
-  uint32_t            fc = 0;
+  StandaloneBook<64, 1024> book{100, 1};
+  Fill                     fills[16];
+  uint32_t                 fc = 0;
 
   EXPECT_TRUE(book.add_order(make_order(1, 105, 100, Side::SELL), fills, fc, 16).valid());
   EXPECT_EQ(fc, 0u);
@@ -154,9 +173,9 @@ TEST(OrderBook, PassiveSellPlaced)
 
 TEST(OrderBook, FullMatch)
 {
-  OrderBook<64, 1024> book{100, 1};
-  Fill                fills[16];
-  uint32_t            fc = 0;
+  StandaloneBook<64, 1024> book{100, 1};
+  Fill                     fills[16];
+  uint32_t                 fc = 0;
   book.add_order(make_order(1, 105, 50, Side::SELL), fills, fc, 16);
 
   fc = 0;
@@ -172,9 +191,9 @@ TEST(OrderBook, FullMatch)
 
 TEST(OrderBook, PartialMatch)
 {
-  OrderBook<64, 1024> book{100, 1};
-  Fill                fills[16];
-  uint32_t            fc = 0;
+  StandaloneBook<64, 1024> book{100, 1};
+  Fill                     fills[16];
+  uint32_t                 fc = 0;
   book.add_order(make_order(1, 105, 30, Side::SELL), fills, fc, 16);
 
   fc = 0;
@@ -188,9 +207,9 @@ TEST(OrderBook, PartialMatch)
 
 TEST(OrderBook, MultiLevelMatch)
 {
-  OrderBook<64, 1024> book{100, 1};
-  Fill                fills[16];
-  uint32_t            fc = 0;
+  StandaloneBook<64, 1024> book{100, 1};
+  Fill                     fills[16];
+  uint32_t                 fc = 0;
   book.add_order(make_order(1, 105, 20, Side::SELL), fills, fc, 16);
   book.add_order(make_order(2, 106, 30, Side::SELL), fills, fc, 16);
 
@@ -204,10 +223,10 @@ TEST(OrderBook, MultiLevelMatch)
 
 TEST(OrderBook, CancelBid)
 {
-  OrderBook<64, 1024> book{100, 1};
-  Fill                fills[16];
-  uint32_t            fc = 0;
-  OrderHandle h = book.add_order(make_order(1, 105, 100, Side::BUY), fills, fc, 16);
+  StandaloneBook<64, 1024> book{100, 1};
+  Fill                     fills[16];
+  uint32_t                 fc = 0;
+  OrderHandle              h = book.add_order(make_order(1, 105, 100, Side::BUY), fills, fc, 16);
   EXPECT_TRUE(h.valid());
   book.cancel_order(h);
   EXPECT_EQ(book.best_bid_price(), INT64_MIN);
@@ -215,10 +234,11 @@ TEST(OrderBook, CancelBid)
 
 TEST(OrderBook, IocKilled)
 {
-  OrderBook<64, 1024> book{100, 1};
-  Fill                fills[16];
-  uint32_t            fc = 0;
-  OrderHandle h = book.add_order(make_order(1, 105, 100, Side::BUY, TimeInForce::IOC), fills, fc, 16);
+  StandaloneBook<64, 1024> book{100, 1};
+  Fill                     fills[16];
+  uint32_t                 fc = 0;
+  OrderHandle              h =
+      book.add_order(make_order(1, 105, 100, Side::BUY, TimeInForce::IOC), fills, fc, 16);
   EXPECT_FALSE(h.valid());
   EXPECT_EQ(fc, 0u);
   EXPECT_EQ(book.best_bid_price(), INT64_MIN);
@@ -245,10 +265,10 @@ TEST(OrderBook, TokenCarriesShard)
 
 TEST(OrderBook, CancelByToken)
 {
-  OrderBook<64, 1024> book{100, 1};
-  Fill                fills[16];
-  uint32_t            fc = 0;
-  OrderHandle h = book.add_order(make_order(1, 105, 100, Side::BUY), fills, fc, 16);
+  StandaloneBook<64, 1024> book{100, 1};
+  Fill                     fills[16];
+  uint32_t                 fc = 0;
+  OrderHandle              h = book.add_order(make_order(1, 105, 100, Side::BUY), fills, fc, 16);
   ASSERT_TRUE(h.valid());
   EXPECT_TRUE(book.cancel_by_token(h.to_token()));
   EXPECT_EQ(book.best_bid_price(), INT64_MIN);
@@ -256,11 +276,11 @@ TEST(OrderBook, CancelByToken)
 
 TEST(OrderBook, StaleTokenRejected)
 {
-  OrderBook<64, 1024> book{100, 1};
-  Fill                fills[16];
-  uint32_t            fc = 0;
-  OrderHandle h = book.add_order(make_order(1, 105, 100, Side::BUY), fills, fc, 16);
-  uint64_t    tok = h.to_token();
+  StandaloneBook<64, 1024> book{100, 1};
+  Fill                     fills[16];
+  uint32_t                 fc = 0;
+  OrderHandle              h = book.add_order(make_order(1, 105, 100, Side::BUY), fills, fc, 16);
+  uint64_t                 tok = h.to_token();
   EXPECT_TRUE(book.cancel_by_token(tok));
   EXPECT_FALSE(book.cancel_by_token(tok));  // stale: gen bumped on free
 }

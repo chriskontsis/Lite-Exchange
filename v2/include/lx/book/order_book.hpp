@@ -29,7 +29,8 @@ struct OrderHandle
 
   static OrderHandle from_token(uint64_t token)
   {
-    return {static_cast<uint32_t>(token & 0xFFFFFF), static_cast<uint32_t>((token >> 24) & 0xFFFFFFFF)};
+    return {static_cast<uint32_t>(token & 0xFFFFFF),
+            static_cast<uint32_t>((token >> 24) & 0xFFFFFFFF)};
   }
 
   static uint8_t token_shard(uint64_t token) { return static_cast<uint8_t>(token >> 56); }
@@ -38,11 +39,16 @@ template <uint32_t MAX_ORDERS, uint32_t LADDER_SIZE>
 class OrderBook
 {
  public:
-  OrderBook(int64_t base_price, int64_t tick_size)
+  // Order storage is borrowed, not owned: one arena per shard is shared by all
+  // the symbol books it hosts, so a slot index is unique shard-wide.
+  OrderBook(int64_t base_price, int64_t tick_size, Pool<Order, MAX_ORDERS>& pool,
+            uint32_t* order_session)
       : base_price_(base_price),
         tick_size_(tick_size),
         best_bid_idx_(NULL_IDX),
-        best_ask_idx_(NULL_IDX)
+        best_ask_idx_(NULL_IDX),
+        pool_(pool),
+        order_session_(order_session)
   {
   }
 
@@ -158,10 +164,10 @@ class OrderBook
 
   PriceLevel               bid_levels_[LADDER_SIZE];
   PriceLevel               ask_levels_[LADDER_SIZE];
-  Pool<Order, MAX_ORDERS>  pool_;
   LevelBitmap<LADDER_SIZE> bid_occ_;
   LevelBitmap<LADDER_SIZE> ask_occ_;
-  uint32_t                 order_session_[MAX_ORDERS]{};  // owner session per slot
+  Pool<Order, MAX_ORDERS>& pool_;           // shared across the shard's symbols
+  uint32_t*                order_session_;  // owner session per slot, shard-wide
 
   int32_t price_to_idx(int64_t price) const
   {

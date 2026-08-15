@@ -16,7 +16,10 @@
 #include "lx/util/affinity.hpp"
 #include "lx/util/tsc.hpp"
 
-using Book = lx::book::OrderBook<65536, 2048>;
+static constexpr uint32_t MAX_ORDERS = 65536;
+static constexpr uint32_t LADDER_SIZE = 2048;
+
+using Book = lx::book::OrderBook<MAX_ORDERS, LADDER_SIZE>;
 
 struct StampedFill
 {
@@ -52,8 +55,11 @@ int main()
       [&]
       {
         lx::util::pin_current_thread(2);
-        Book            book{900, 1};
-        lx::proto::Fill fills[64];
+        // Arena lives on the pinned thread, matching how a Shard owns it.
+        lx::book::Pool<lx::book::Order, MAX_ORDERS> pool;
+        uint32_t                                    order_session[MAX_ORDERS]{};
+        Book                                        book{900, 1, pool, order_session};
+        lx::proto::Fill                             fills[64];
         while (running.load(std::memory_order_relaxed))
         {
           lx::proto::NewOrder msg;
@@ -115,9 +121,8 @@ int main()
 
   auto report = [](const char* name, hdr_histogram* h)
   {
-    std::printf("%-22s p50=%5ld  p99=%5ld  p99.9=%6ld\n", name,
-                hdr_value_at_percentile(h, 50.0), hdr_value_at_percentile(h, 99.0),
-                hdr_value_at_percentile(h, 99.9));
+    std::printf("%-22s p50=%5ld  p99=%5ld  p99.9=%6ld\n", name, hdr_value_at_percentile(h, 50.0),
+                hdr_value_at_percentile(h, 99.0), hdr_value_at_percentile(h, 99.9));
   };
   std::printf("--- round-trip breakdown (ns) ---\n");
   report("A inbound transit", h_in);

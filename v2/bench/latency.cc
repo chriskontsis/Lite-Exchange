@@ -9,7 +9,9 @@
 #include "lx/util/affinity.hpp"
 #include "lx/util/tsc.hpp"
 
-using Shard = lx::engine::Shard<65536, 2048, 4096>;
+static constexpr lx::engine::ShardConfig SHARD_CFG{
+    .max_orders = 65536, .ladder_size = 2048, .queue_depth = 4096};
+using Shard = lx::engine::Shard<SHARD_CFG>;
 
 static lx::proto::InboundMsg make_order(uint64_t oid, lx::proto::Side side)
 {

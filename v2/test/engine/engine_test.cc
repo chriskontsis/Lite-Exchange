@@ -5,6 +5,10 @@
 using namespace lx;
 using namespace lx::proto;
 
+static constexpr engine::ShardConfig TEST_SHARD{
+    .max_orders = 256, .ladder_size = 64, .queue_depth = 64};
+using TestShard = engine::Shard<TEST_SHARD>;
+
 static InboundMsg in_new(uint64_t oid, int64_t price, uint32_t qty, Side side,
                          TimeInForce tif = TimeInForce::GTC)
 {
@@ -27,7 +31,7 @@ static InboundMsg in_cancel(uint64_t token)
 }
 
 // Pop one outbound message, failing the test if the queue is empty.
-static OutboundMsg pop_out(engine::Shard<256, 64, 64>& shard)
+static OutboundMsg pop_out(TestShard& shard)
 {
   OutboundMsg m{};
   EXPECT_TRUE(shard.outbound().pop(m));
@@ -36,7 +40,7 @@ static OutboundMsg pop_out(engine::Shard<256, 64, 64>& shard)
 
 TEST(Shard, PassiveOrderRestsEmitsAck)
 {
-  engine::Shard<256, 64, 64> shard{100, 1};
+  TestShard shard{100, 1};
   shard.inbound().push(in_new(1, 105, 50, Side::BUY));
   shard.tick();
 
@@ -49,7 +53,7 @@ TEST(Shard, PassiveOrderRestsEmitsAck)
 
 TEST(Shard, MatchProducesFill)
 {
-  engine::Shard<256, 64, 64> shard{100, 1};
+  TestShard shard{100, 1};
   shard.inbound().push(in_new(1, 105, 50, Side::SELL));
   shard.tick();
   pop_out(shard);  // drain the resting sell's Ack
@@ -68,7 +72,7 @@ TEST(Shard, MatchProducesFill)
 
 TEST(Shard, PartialMatchLeavesRemainder)
 {
-  engine::Shard<256, 64, 64> shard{100, 1};
+  TestShard shard{100, 1};
 
   shard.inbound().push(in_new(1, 105, 100, Side::SELL));
   shard.tick();
@@ -85,7 +89,7 @@ TEST(Shard, PartialMatchLeavesRemainder)
 
 TEST(Shard, CancelRemovesRestingOrder)
 {
-  engine::Shard<256, 64, 64> shard{100, 1};
+  TestShard shard{100, 1};
 
   shard.inbound().push(in_new(1, 105, 50, Side::BUY));
   shard.tick();
@@ -105,7 +109,7 @@ TEST(Shard, CancelOrderingPreservedAfterNew)
 {
   // NEW then CANCEL in the same stream: the cancel must not overtake the new,
   // so by the time the cancel is processed the order is in the book.
-  engine::Shard<256, 64, 64> shard{100, 1};
+  TestShard shard{100, 1};
 
   shard.inbound().push(in_new(1, 105, 50, Side::BUY));
   shard.tick();
@@ -121,7 +125,7 @@ TEST(Shard, CancelOrderingPreservedAfterNew)
 
 TEST(Shard, StaleCancelRejected)
 {
-  engine::Shard<256, 64, 64> shard{100, 1};
+  TestShard shard{100, 1};
 
   shard.inbound().push(in_new(1, 105, 50, Side::BUY));
   shard.tick();
@@ -141,7 +145,7 @@ TEST(Shard, StaleCancelRejected)
 
 TEST(Shard, IocKilledWhenNoLiquidity)
 {
-  engine::Shard<256, 64, 64> shard{100, 1};
+  TestShard shard{100, 1};
 
   shard.inbound().push(in_new(1, 105, 50, Side::BUY, TimeInForce::IOC));
   shard.tick();

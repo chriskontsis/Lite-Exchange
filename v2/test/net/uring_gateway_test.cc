@@ -1,3 +1,5 @@
+#include "lx/net/uring_gateway.hpp"
+
 #include <arpa/inet.h>
 #include <gtest/gtest.h>
 #include <netinet/in.h>
@@ -9,12 +11,13 @@
 #include <thread>
 
 #include "lx/engine/shard.hpp"
-#include "lx/net/uring_gateway.hpp"
 
 using namespace lx;
 using namespace lx::proto;
 
-using TestShard = engine::Shard<256, 64, 64>;
+static constexpr engine::ShardConfig TEST_SHARD{
+    .max_orders = 256, .ladder_size = 64, .queue_depth = 64};
+using TestShard = engine::Shard<TEST_SHARD>;
 
 static NewOrder make_order(uint64_t oid, int64_t price, uint32_t qty, Side side)
 {
@@ -46,9 +49,9 @@ static int connect_client(uint16_t port)
 
 TEST(UringGateway, NewOrderReturnsAck)
 {
-  TestShard                     shard{100, 1};
-  net::UringGateway<TestShard>  gw{shard, /*port*/ 0};
-  uint16_t                      port = gw.port();
+  TestShard                    shard{100, 1};
+  net::UringGateway<TestShard> gw{shard, /*port*/ 0};
+  uint16_t                     port = gw.port();
   ASSERT_NE(port, 0);
 
   std::thread shard_thread([&] { shard.run(); });

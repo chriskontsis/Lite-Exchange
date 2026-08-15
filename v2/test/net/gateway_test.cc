@@ -1,3 +1,5 @@
+#include "lx/net/gateway.hpp"
+
 #include <arpa/inet.h>
 #include <gtest/gtest.h>
 #include <netinet/in.h>
@@ -9,12 +11,15 @@
 #include <thread>
 
 #include "lx/engine/shard.hpp"
-#include "lx/net/gateway.hpp"
+#include "lx/engine/shard_set.hpp"
 
 using namespace lx;
 using namespace lx::proto;
 
-using TestShard = engine::Shard<256, 64, 64>;
+static constexpr engine::ShardConfig TEST_SHARD{
+    .max_orders = 256, .ladder_size = 64, .queue_depth = 64};
+using TestShard = engine::Shard<TEST_SHARD>;
+using TestShardSet = engine::ShardSet<TestShard, 1>;
 
 static NewOrder make_order(uint64_t oid, int64_t price, uint32_t qty, Side side)
 {
@@ -61,9 +66,10 @@ static int count_acks(int fd, int budget_ms)
 
 TEST(Gateway, NewOrderReturnsAck)
 {
-  TestShard      shard{100, 1};
-  net::Gateway<TestShard> gw{shard, /*port*/ 0};
-  uint16_t       port = gw.port();
+  TestShard                  shard{100, 1};
+  TestShardSet               shards{{&shard}};
+  net::Gateway<TestShardSet> gw{shards, /*port*/ 0};
+  uint16_t                   port = gw.port();
   ASSERT_NE(port, 0);
 
   std::thread shard_thread([&] { shard.run(); });
@@ -89,9 +95,10 @@ TEST(Gateway, NewOrderReturnsAck)
 
 TEST(Gateway, OutboundRoutedToOriginatingClient)
 {
-  TestShard               shard{100, 1};
-  net::Gateway<TestShard> gw{shard, /*port*/ 0};
-  uint16_t                port = gw.port();
+  TestShard                  shard{100, 1};
+  TestShardSet               shards{{&shard}};
+  net::Gateway<TestShardSet> gw{shards, /*port*/ 0};
+  uint16_t                   port = gw.port();
   ASSERT_NE(port, 0);
 
   std::thread shard_thread([&] { shard.run(); });
@@ -120,9 +127,10 @@ TEST(Gateway, OutboundRoutedToOriginatingClient)
 
 TEST(Gateway, FillRoutedToBothParties)
 {
-  TestShard               shard{100, 1};
-  net::Gateway<TestShard> gw{shard, /*port*/ 0};
-  uint16_t                port = gw.port();
+  TestShard                  shard{100, 1};
+  TestShardSet               shards{{&shard}};
+  net::Gateway<TestShardSet> gw{shards, /*port*/ 0};
+  uint16_t                   port = gw.port();
   ASSERT_NE(port, 0);
 
   std::thread shard_thread([&] { shard.run(); });
@@ -164,9 +172,10 @@ TEST(Gateway, FillRoutedToBothParties)
 
 TEST(Gateway, CancelOverWireRemovesOrder)
 {
-  TestShard               shard{100, 1};
-  net::Gateway<TestShard> gw{shard, /*port*/ 0};
-  uint16_t                port = gw.port();
+  TestShard                  shard{100, 1};
+  TestShardSet               shards{{&shard}};
+  net::Gateway<TestShardSet> gw{shards, /*port*/ 0};
+  uint16_t                   port = gw.port();
   ASSERT_NE(port, 0);
 
   std::thread shard_thread([&] { shard.run(); });

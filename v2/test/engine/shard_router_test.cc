@@ -1,12 +1,17 @@
+#include "lx/engine/shard_router.hpp"
+
 #include <gtest/gtest.h>
 
 #include "lx/engine/shard.hpp"
-#include "lx/engine/shard_router.hpp"
 
 using namespace lx;
 using namespace lx::proto;
 
-using S = engine::Shard<256, 64, 64>;
+// Books are indexed by global symbol id, so every shard must be able to address
+// the whole symbol space even though it only ever owns its share of it.
+static constexpr engine::ShardConfig TEST_SHARD{
+    .max_orders = 256, .ladder_size = 64, .queue_depth = 64, .max_symbols = 2};
+using S = engine::Shard<TEST_SHARD>;
 
 static InboundMsg new_order(uint16_t symbol, uint64_t oid, int64_t price, Side side)
 {
@@ -23,8 +28,8 @@ static InboundMsg new_order(uint16_t symbol, uint64_t oid, int64_t price, Side s
 
 TEST(ShardRouter, RoutesBySymbol)
 {
-  S s0{100, 1, 0};
-  S s1{100, 1, 1};
+  S                         s0{100, 1, 0};
+  S                         s1{100, 1, 1};
   engine::ShardRouter<S, 2> router{{&s0, &s1}};
 
   router.push(new_order(/*symbol*/ 0, 1, 105, Side::BUY));  // -> shard 0
@@ -32,14 +37,14 @@ TEST(ShardRouter, RoutesBySymbol)
   s0.tick();
   s1.tick();
 
-  EXPECT_EQ(s0.best_bid(), int64_t{105});
-  EXPECT_EQ(s1.best_bid(), int64_t{107});
+  EXPECT_EQ(s0.best_bid(/*symbol*/ 0), int64_t{105});
+  EXPECT_EQ(s1.best_bid(/*symbol*/ 1), int64_t{107});
 }
 
 TEST(ShardRouter, RoutesCancelByTokenShard)
 {
-  S s0{100, 1, 0};
-  S s1{100, 1, 1};
+  S                         s0{100, 1, 0};
+  S                         s1{100, 1, 1};
   engine::ShardRouter<S, 2> router{{&s0, &s1}};
 
   // Rest an order on shard 1; read its Ack to get the shard-tagged token.
@@ -57,5 +62,5 @@ TEST(ShardRouter, RoutesCancelByTokenShard)
   router.push(cxl);
   s1.tick();
 
-  EXPECT_EQ(s1.best_bid(), INT64_MIN);
+  EXPECT_EQ(s1.best_bid(/*symbol*/ 1), INT64_MIN);
 }

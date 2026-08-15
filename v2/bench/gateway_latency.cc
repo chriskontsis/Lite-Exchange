@@ -17,11 +17,15 @@
 #include <thread>
 
 #include "lx/engine/shard.hpp"
+#include "lx/engine/shard_set.hpp"
 #include "lx/net/gateway.hpp"
 #include "lx/util/affinity.hpp"
 #include "lx/util/tsc.hpp"
 
-using Shard = lx::engine::Shard<65536, 2048, 4096>;
+static constexpr lx::engine::ShardConfig SHARD_CFG{
+    .max_orders = 65536, .ladder_size = 2048, .queue_depth = 4096};
+using Shard = lx::engine::Shard<SHARD_CFG>;
+using ShardSet = lx::engine::ShardSet<Shard, 1>;
 
 int main()
 {
@@ -29,10 +33,11 @@ int main()
   constexpr int MEASURE = 40000;
   constexpr int TOTAL = WARMUP + MEASURE;  // < pool capacity: every order rests
 
-  Shard                   shard{900, 1};
-  lx::net::Gateway<Shard> gw{shard, /*port*/ 0};
-  uint16_t                port = gw.port();
-  std::atomic<bool>       running{true};
+  Shard                      shard{900, 1};
+  ShardSet                   shards{{&shard}};
+  lx::net::Gateway<ShardSet> gw{shards, /*port*/ 0};
+  uint16_t                   port = gw.port();
+  std::atomic<bool>          running{true};
 
   std::thread shard_thread(
       [&]

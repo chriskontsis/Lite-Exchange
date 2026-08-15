@@ -20,7 +20,9 @@
 #include "lx/util/affinity.hpp"
 #include "lx/util/tsc.hpp"
 
-using Shard = lx::engine::Shard<65536, 2048, 4096>;
+static constexpr lx::engine::ShardConfig SHARD_CFG{
+    .max_orders = 65536, .ladder_size = 2048, .queue_depth = 4096};
+using Shard = lx::engine::Shard<SHARD_CFG>;
 
 int main(int argc, char** argv)
 {
@@ -35,7 +37,7 @@ int main(int argc, char** argv)
   Shard                        shard{900, 1};
   lx::net::UringGateway<Shard> gw{shard, /*port*/ 0, sqpoll, /*sq_cpu*/ 7};
   uint16_t                     port = gw.port();
-  std::atomic<bool>       running{true};
+  std::atomic<bool>            running{true};
 
   std::thread shard_thread(
       [&]

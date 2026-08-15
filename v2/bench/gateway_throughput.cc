@@ -18,11 +18,15 @@
 #include <vector>
 
 #include "lx/engine/shard.hpp"
+#include "lx/engine/shard_set.hpp"
 #include "lx/net/gateway.hpp"
 #include "lx/net/uring_gateway.hpp"
 #include "lx/util/affinity.hpp"
 
-using Shard = lx::engine::Shard<1 << 20, 2048, 16384>;  // 1M pool, deep queue
+static constexpr lx::engine::ShardConfig SHARD_CFG{
+    .max_orders = 1 << 20, .ladder_size = 2048, .queue_depth = 16384};
+using Shard = lx::engine::Shard<SHARD_CFG>;
+using ShardSet = lx::engine::ShardSet<Shard, 1>;
 
 constexpr int      CONNS = 128;
 constexpr int      LOADERS = 4;
@@ -58,7 +62,7 @@ static int connect_client(uint16_t port)
 // Returns aggregate throughput in orders/sec.
 static double run_load(uint16_t port)
 {
-  constexpr int per_loader_conns = CONNS / LOADERS;
+  constexpr int  per_loader_conns = CONNS / LOADERS;
   const uint64_t per_loader_orders = TOTAL / LOADERS;
 
   std::atomic<int>  ready{0};
@@ -78,8 +82,8 @@ static double run_load(uint16_t port)
           while (!go.load(std::memory_order_acquire))
             ;
 
-          uint64_t oid = static_cast<uint64_t>(L) * 100'000'000ULL + 1;
-          uint64_t sent = 0;
+          uint64_t       oid = static_cast<uint64_t>(L) * 100'000'000ULL + 1;
+          uint64_t       sent = 0;
           lx::proto::Ack ackbuf[PIPELINE];
           while (sent < per_loader_orders)
           {
@@ -118,7 +122,7 @@ static double run_load(uint16_t port)
     t.join();
   auto t1 = std::chrono::steady_clock::now();
 
-  double secs = std::chrono::duration<double>(t1 - t0).count();
+  double   secs = std::chrono::duration<double>(t1 - t0).count();
   uint64_t done = static_cast<uint64_t>(per_loader_orders) * LOADERS;
   return static_cast<double>(done) / secs;
 }
@@ -157,7 +161,8 @@ int main(int argc, char** argv)
 
   if (std::strcmp(mode, "epoll") == 0)
   {
-    lx::net::Gateway<Shard> gw{shard, 0};
+    ShardSet                   shards{{&shard}};
+    lx::net::Gateway<ShardSet> gw{shards, 0};
     measure(gw, "epoll");
   }
   else if (std::strcmp(mode, "uring") == 0)
