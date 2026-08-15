@@ -7,10 +7,10 @@
 using namespace lx;
 using namespace lx::proto;
 
-// Books are indexed by global symbol id, so every shard must be able to address
-// the whole symbol space even though it only ever owns its share of it.
+// Two symbols split across two shards: each shard hosts ONE book but must be
+// addressable by either global id, which is what the symbol table buys.
 static constexpr engine::ShardConfig TEST_SHARD{
-    .max_orders = 256, .ladder_size = 64, .queue_depth = 64, .max_symbols = 2};
+    .max_orders = 256, .ladder_size = 64, .queue_depth = 64, .max_symbols = 1, .symbol_space = 2};
 using S = engine::Shard<TEST_SHARD>;
 
 static InboundMsg new_order(uint16_t symbol, uint64_t oid, int64_t price, Side side)
@@ -28,8 +28,8 @@ static InboundMsg new_order(uint16_t symbol, uint64_t oid, int64_t price, Side s
 
 TEST(ShardRouter, RoutesBySymbol)
 {
-  S                         s0{100, 1, 0};
-  S                         s1{100, 1, 1};
+  S                         s0{100, 1, 0, {0}};
+  S                         s1{100, 1, 1, {1}};
   engine::ShardRouter<S, 2> router{{&s0, &s1}};
 
   router.push(new_order(/*symbol*/ 0, 1, 105, Side::BUY));  // -> shard 0
@@ -43,8 +43,8 @@ TEST(ShardRouter, RoutesBySymbol)
 
 TEST(ShardRouter, RoutesCancelByTokenShard)
 {
-  S                         s0{100, 1, 0};
-  S                         s1{100, 1, 1};
+  S                         s0{100, 1, 0, {0}};
+  S                         s1{100, 1, 1, {1}};
   engine::ShardRouter<S, 2> router{{&s0, &s1}};
 
   // Rest an order on shard 1; read its Ack to get the shard-tagged token.

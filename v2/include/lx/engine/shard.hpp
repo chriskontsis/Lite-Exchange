@@ -1,6 +1,7 @@
 #pragma once
 #include <array>
 #include <atomic>
+#include <cassert>
 #include <cstdint>
 #include <utility>
 
@@ -14,25 +15,57 @@ namespace lx::engine
 // call sites name each knob instead of listing bare numbers positionally.
 struct ShardConfig
 {
-  uint32_t max_orders;   // shard-wide order arena (one huge-page pool)
-  uint32_t ladder_size;  // price levels per symbol book
-  uint32_t queue_depth;  // inbound/outbound SPSC ring slots
-  uint16_t max_symbols = 1;
+  uint32_t max_orders;        // shard-wide order arena (one huge-page pool)
+  uint32_t ladder_size;       // price levels per symbol book
+  uint32_t queue_depth;       // inbound/outbound SPSC ring slots
+  uint16_t max_symbols = 1;   // instruments this shard hosts (= books allocated)
+  uint16_t symbol_space = 0;  // global id range it can be addressed by; 0 = max_symbols
 };
 
 // One matching shard: owns max_symbols books over a single shared order arena,
 // so a pool slot is unique shard-wide and a cancel token needs no symbol field.
+// Instruments are assigned by reference data, so global symbol ids are sparse;
+// a lookup table maps them to dense book slots and books scale with the
+// instruments hosted, not with the id space.
+//
+// Books hold references into this object, so a Shard cannot be moved or copied.
 template <ShardConfig CFG>
 class Shard
 {
  public:
   static constexpr uint32_t MAX_FILLS_PER_ORDER = 64;
+  static constexpr uint16_t NO_BOOK = UINT16_MAX;
+  static constexpr uint16_t SYMBOL_SPACE =
+      CFG.symbol_space != 0 ? CFG.symbol_space : CFG.max_symbols;
 
-  Shard(int64_t base_price, int64_t tick_size, uint8_t shard_id = 0)
+  // An empty symbol list means the shard owns [0, max_symbols) — the identity
+  // mapping, which is what the single-shard and N=1 setups want.
+  Shard(int64_t base_price, int64_t tick_size, uint8_t shard_id = 0,
+        std::initializer_list<uint16_t> symbols = {})
       : books_(make_books(base_price, tick_size, std::make_index_sequence<CFG.max_symbols>{})),
         shard_id_(shard_id)
   {
+    for (uint16_t& book : local_of_)
+      book = NO_BOOK;
+
+    if (symbols.size() == 0)
+    {
+      for (uint16_t s = 0; s < CFG.max_symbols && s < SYMBOL_SPACE; ++s)
+        local_of_[s] = s;
+      return;
+    }
+
+    assert(symbols.size() <= CFG.max_symbols);
+    uint16_t next = 0;
+    for (uint16_t s : symbols)
+    {
+      assert(s < SYMBOL_SPACE);
+      local_of_[s] = next++;
+    }
   }
+
+  Shard(const Shard&) = delete;
+  Shard& operator=(const Shard&) = delete;
 
   void tick()
   {
@@ -65,11 +98,26 @@ class Shard
   SpscQueue<proto::InboundMsg, CFG.queue_depth>& inbound() { return inbound_; }
   SpscQueue<proto::OutboundMsg, CFG.queue_depth>& outbound() { return outbound_; }
 
-  int64_t best_bid(uint16_t symbol = 0) const { return books_[symbol].best_bid_price(); }
-  int64_t best_ask(uint16_t symbol = 0) const { return books_[symbol].best_ask_price(); }
+  int64_t best_bid(uint16_t symbol = 0) const
+  {
+    uint16_t book = local_book(symbol);
+    return book == NO_BOOK ? INT64_MIN : books_[book].best_bid_price();
+  }
+
+  int64_t best_ask(uint16_t symbol = 0) const
+  {
+    uint16_t book = local_book(symbol);
+    return book == NO_BOOK ? INT64_MAX : books_[book].best_ask_price();
+  }
 
  private:
   using Book = book::OrderBook<CFG.max_orders, CFG.ladder_size>;
+
+  // Global symbol id -> dense book slot, or NO_BOOK if another shard owns it.
+  uint16_t local_book(uint16_t symbol) const
+  {
+    return symbol < SYMBOL_SPACE ? local_of_[symbol] : NO_BOOK;
+  }
 
   // Every book borrows pool_/order_session_, so both must already be built —
   // they are declared ahead of books_ below.
@@ -82,7 +130,8 @@ class Shard
 
   void handle_new(const proto::NewOrder& order, uint32_t session_id)
   {
-    if (order.symbol_id >= CFG.max_symbols)
+    uint16_t book = local_book(order.symbol_id);
+    if (book == NO_BOOK)
     {
       emit_reject(order.order_id, proto::RejectReason::UNKNOWN_SYMBOL, session_id);
       return;
@@ -90,8 +139,7 @@ class Shard
 
     proto::Fill       fills[MAX_FILLS_PER_ORDER];
     uint32_t          fill_count = 0;
-    book::OrderHandle h =
-        books_[order.symbol_id].add_order(order, fills, fill_count, MAX_FILLS_PER_ORDER);
+    book::OrderHandle h = books_[book].add_order(order, fills, fill_count, MAX_FILLS_PER_ORDER);
 
     for (uint32_t i = 0; i < fill_count; ++i)
       emit_fill(fills[i], session_id);
@@ -112,8 +160,8 @@ class Shard
       return;
     }
 
-    uint16_t symbol = pool_[h.slot].symbol;
-    if (symbol >= CFG.max_symbols || !books_[symbol].cancel_order(h))
+    uint16_t book = local_book(pool_[h.slot].symbol);
+    if (book == NO_BOOK || !books_[book].cancel_order(h))
     {
       emit_reject(0, proto::RejectReason::UNKNOWN_ORDER, session_id);
       return;
@@ -167,6 +215,7 @@ class Shard
   book::Pool<book::Order, CFG.max_orders>        pool_;
   uint32_t                                       order_session_[CFG.max_orders]{};
   std::array<Book, CFG.max_symbols>              books_;
+  uint16_t                                       local_of_[SYMBOL_SPACE];
   SpscQueue<proto::InboundMsg, CFG.queue_depth>  inbound_;
   SpscQueue<proto::OutboundMsg, CFG.queue_depth> outbound_;
   std::atomic<bool>                              running_{true};

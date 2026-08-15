@@ -7,8 +7,9 @@
 using namespace lx;
 using namespace lx::proto;
 
+// One book per shard, addressable across a two-symbol space.
 static constexpr engine::ShardConfig TEST_SHARD{
-    .max_orders = 256, .ladder_size = 64, .queue_depth = 64, .max_symbols = 2};
+    .max_orders = 256, .ladder_size = 64, .queue_depth = 64, .max_symbols = 1, .symbol_space = 2};
 using TestShard = engine::Shard<TEST_SHARD>;
 
 static InboundMsg make_order(uint16_t symbol, uint64_t order_id, int64_t price)
@@ -26,8 +27,8 @@ static InboundMsg make_order(uint16_t symbol, uint64_t order_id, int64_t price)
 
 TEST(ShardSet, RoutesInboundThroughRouter)
 {
-  TestShard                      s0{100, 1, 0};
-  TestShard                      s1{100, 1, 1};
+  TestShard                      s0{100, 1, 0, {0}};
+  TestShard                      s1{100, 1, 1, {1}};
   engine::ShardSet<TestShard, 2> shards{{&s0, &s1}};
 
   ASSERT_TRUE(shards.router().push(make_order(0, 1, 105)));
@@ -41,8 +42,8 @@ TEST(ShardSet, RoutesInboundThroughRouter)
 
 TEST(ShardSet, ExposesEachOutboundRing)
 {
-  TestShard                      s0{100, 1, 0};
-  TestShard                      s1{100, 1, 1};
+  TestShard                      s0{100, 1, 0, {0}};
+  TestShard                      s1{100, 1, 1, {1}};
   engine::ShardSet<TestShard, 2> shards{{&s0, &s1}};
 
   ASSERT_TRUE(shards.router().push(make_order(0, 11, 105)));

@@ -13,3 +13,7 @@ add_test(NAME shard_set COMMAND shard_set_test)
 add_executable(shard_symbols_test shard_symbols_test.cc)
 target_link_libraries(shard_symbols_test PRIVATE GTest::gtest_main)
 add_test(NAME shard_symbols COMMAND shard_symbols_test)
+
+add_executable(shard_symbol_table_test shard_symbol_table_test.cc)
+target_link_libraries(shard_symbol_table_test PRIVATE GTest::gtest_main)
+add_test(NAME shard_symbol_table COMMAND shard_symbol_table_test)
