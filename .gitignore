@@ -63,8 +63,15 @@ Testing/
 *.pem
 *.key
 
-# v2
-v2/docs
+# Legacy v1 FIX engine — kept on disk for reference, not part of this repo.
+# Still in history: `git log -- src/` before the v2 restructure.
+/v1/
+
+# docs/ is a separate private repo (nested). The public architecture doc lives
+# at the top level as ARCHITECTURE.md — git will not track files inside a
+# nested repo, so it cannot live in docs/.
+docs/
+
+# Build trees
 build-release/
-v2/build-release/
 build-root/
