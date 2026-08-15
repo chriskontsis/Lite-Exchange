@@ -3,6 +3,7 @@
 #include <atomic>
 #include <cassert>
 #include <cstdint>
+#include <span>
 #include <utility>
 
 #include "lx/book/order_book.hpp"
@@ -42,13 +43,19 @@ class Shard
   // mapping, which is what the single-shard and N=1 setups want.
   Shard(int64_t base_price, int64_t tick_size, uint8_t shard_id = 0,
         std::initializer_list<uint16_t> symbols = {})
+      : Shard(base_price, tick_size, shard_id, std::span<const uint16_t>{symbols})
+  {
+  }
+
+  // Overload for ownership computed at runtime (a bench picking symbols per N).
+  Shard(int64_t base_price, int64_t tick_size, uint8_t shard_id, std::span<const uint16_t> symbols)
       : books_(make_books(base_price, tick_size, std::make_index_sequence<CFG.max_symbols>{})),
         shard_id_(shard_id)
   {
     for (uint16_t& book : local_of_)
       book = NO_BOOK;
 
-    if (symbols.size() == 0)
+    if (symbols.empty())
     {
       for (uint16_t s = 0; s < CFG.max_symbols && s < SYMBOL_SPACE; ++s)
         local_of_[s] = s;
